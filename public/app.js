@@ -5,6 +5,7 @@ const downloadButton = document.querySelector("#downloadButton");
 const statusEl = document.querySelector("#status");
 const canvas = document.querySelector("#previewCanvas");
 const ctx = canvas.getContext("2d");
+const fontStack = "Poppins, Arial, sans-serif";
 
 const controls = {
   width: document.querySelector("#cardWidth"),
@@ -30,10 +31,10 @@ function setStatus(message) {
 
 function fitText(ctx, text, maxWidth, baseSize, minSize) {
   let size = baseSize;
-  ctx.font = `900 ${size}px Inter, Arial, sans-serif`;
+  ctx.font = `800 ${size}px ${fontStack}`;
   while (size > minSize && ctx.measureText(text).width > maxWidth) {
     size -= 1;
-    ctx.font = `900 ${size}px Inter, Arial, sans-serif`;
+    ctx.font = `800 ${size}px ${fontStack}`;
   }
   return size;
 }
@@ -46,7 +47,7 @@ function wrapText(ctx, text, maxWidth, baseSize, minSize) {
 
   for (const word of words) {
     const testLine = line ? `${line} ${word}` : word;
-    ctx.font = `900 ${size}px Inter, Arial, sans-serif`;
+    ctx.font = `800 ${size}px ${fontStack}`;
 
     if (ctx.measureText(testLine).width <= maxWidth) {
       line = testLine;
@@ -86,7 +87,7 @@ function drawCoverImage(image, x, y, width, height) {
 }
 
 function roundedRect(ctx, x, y, width, height, radius) {
-  const safeRadius = Math.min(radius, width / 2, height / 2);
+  const safeRadius = Math.min(radius, width / 10, height / 10);
   ctx.beginPath();
   ctx.moveTo(x + safeRadius, y);
   ctx.lineTo(x + width - safeRadius, y);
@@ -112,7 +113,7 @@ function getInitials(value = "") {
 
 function drawLogoMark(label, x, y, size) {
   ctx.fillStyle = "#060708";
-  ctx.font = `900 ${Math.round(size * 0.36)}px Inter, Arial, sans-serif`;
+  ctx.font = `800 ${Math.round(size * 0.36)}px ${fontStack}`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   const logoText = controls.logoText.value.trim().toUpperCase() || getInitials(label);
@@ -192,7 +193,7 @@ async function drawCard(data = currentData) {
     ctx.fillStyle = "#20242b";
     ctx.fillRect(0, 0, width, imageHeight);
     ctx.fillStyle = "#8f98a5";
-    ctx.font = `700 ${Math.round(width * 0.035)}px Inter, Arial, sans-serif`;
+    ctx.font = `700 ${Math.round(width * 0.035)}px ${fontStack}`;
     ctx.fillText("No featured image found", padding, imageHeight / 2);
   }
 
@@ -204,14 +205,14 @@ async function drawCard(data = currentData) {
   ctx.fillRect(0, bodyTop, width, lowerHeight);
 
   const displayUrl = data.displayUrl || "";
-  const logoSize = Math.round(width * 0.074);
+  const logoSize = Math.round(width * 0.059);
   const labelSize = Math.round(width * 0.043);
-  const logoY = bodyTop + padding;
+  const logoY = bodyTop + Math.round(padding * 0.72);
   await drawLogo(data, padding, logoY, logoSize);
 
-  ctx.font = `400 ${labelSize}px Inter, Arial, sans-serif`;
+  ctx.font = `400 ${labelSize}px ${fontStack}`;
   ctx.fillStyle = controls.trim.value;
-  ctx.fillText(displayUrl, padding + logoSize + Math.round(width * 0.022), logoY + Math.round(logoSize * 0.64));
+  ctx.fillText(displayUrl, padding + logoSize + Math.round(width * 0.022), logoY + Math.round(logoSize * 0.72));
 
   const titleBase = Number(controls.titleSize.value) || Math.round(width * 0.069);
   const titleMaxWidth = width - padding * 2;
@@ -225,7 +226,7 @@ async function drawCard(data = currentData) {
   }
 
   ctx.fillStyle = controls.text.value;
-  ctx.font = `900 ${size}px Inter, Arial, sans-serif`;
+  ctx.font = `800 ${size}px ${fontStack}`;
   let y = titleTop + size;
   for (const line of visibleLines) {
     ctx.fillText(line, padding, y);
@@ -296,4 +297,4 @@ controls.logoUpload.addEventListener("change", () => {
   reader.readAsDataURL(file);
 });
 
-drawCard();
+document.fonts?.ready.then(() => drawCard()) || drawCard();
