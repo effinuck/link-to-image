@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Link Preview Card Agent</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="tool-panel" aria-label="Link preview generator">
+        <div class="header-row">
+          <div>
+            <p class="eyebrow">Link Preview Card Agent</p>
+            <h1>Paste a URL, export the card.</h1>
+          </div>
+          <button class="ghost-button" id="sampleButton" type="button">Sample</button>
+        </div>
+
+        <form class="url-form" id="urlForm">
+          <label for="urlInput">Webpage URL</label>
+          <div class="input-row">
+            <input id="urlInput" name="url" type="url" placeholder="https://example.com/article" autocomplete="url" required>
+            <button type="submit">Generate</button>
+          </div>
+        </form>
+
+        <div class="settings-grid">
+          <label>
+            Card width
+            <input id="cardWidth" type="number" min="640" max="1600" step="10" value="900">
+          </label>
+          <label>
+            Title size
+            <input id="titleSize" type="number" min="40" max="92" step="1" value="58">
+          </label>
+          <label>
+            Background
+            <input id="backgroundColor" type="color" value="#000000">
+          </label>
+          <label>
+            Text
+            <input id="textColor" type="color" value="#f4f5fb">
+          </label>
+          <label>
+            Trim colour
+            <input id="trimColor" type="color" value="#f0d13a">
+          </label>
+          <label>
+            Logo PNG
+            <input id="logoUpload" type="file" accept="image/png">
+          </label>
+          <label>
+            Logo text
+            <input id="logoText" type="text" maxlength="4" value="IM">
+          </label>
+        </div>
+
+        <div class="status" id="status" role="status" aria-live="polite">Ready.</div>
+
+        <div class="action-row">
+          <button id="downloadButton" type="button">Download PNG</button>
+        </div>
+      </section>
+
+      <section class="preview-panel" aria-label="Generated preview">
+        <canvas id="previewCanvas" width="900" height="950"></canvas>
+      </section>
+    </main>
+
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>
