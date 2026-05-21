@@ -75,11 +75,16 @@ function decodeHtml(value = "") {
 
 function getMeta(html, keys) {
   for (const key of keys) {
+    // Try double-quoted content first, then single-quoted
     const patterns = [
-      new RegExp(`<meta[^>]+property=["']${key}["'][^>]+content=["']([^"']+)["'][^>]*>`, "i"),
-      new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+property=["']${key}["'][^>]*>`, "i"),
-      new RegExp(`<meta[^>]+name=["']${key}["'][^>]+content=["']([^"']+)["'][^>]*>`, "i"),
-      new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+name=["']${key}["'][^>]*>`, "i")
+      new RegExp(`<meta[^>]+property=["']${key}["'][^>]+content="([^"]*)"[^>]*>`, "i"),
+      new RegExp(`<meta[^>]+content="([^"]*)"[^>]+property=["']${key}["'][^>]*>`, "i"),
+      new RegExp(`<meta[^>]+name=["']${key}["'][^>]+content="([^"]*)"[^>]*>`, "i"),
+      new RegExp(`<meta[^>]+content="([^"]*)"[^>]+name=["']${key}["'][^>]*>`, "i"),
+      new RegExp(`<meta[^>]+property=["']${key}["'][^>]+content='([^']*)'[^>]*>`, "i"),
+      new RegExp(`<meta[^>]+content='([^']*)'[^>]+property=["']${key}["'][^>]*>`, "i"),
+      new RegExp(`<meta[^>]+name=["']${key}["'][^>]+content='([^']*)'[^>]*>`, "i"),
+      new RegExp(`<meta[^>]+content='([^']*)'[^>]+name=["']${key}["'][^>]*>`, "i"),
     ];
     for (const pattern of patterns) {
       const match = html.match(pattern);

@@ -206,7 +206,12 @@ async function drawCard(data = currentData) {
   if (uploadedBgImageSrc) {
     try {
       const bgImage = await loadImage(uploadedBgImageSrc);
-      ctx.drawImage(bgImage, 0, bodyTop, width, lowerHeight);
+      // Scale to fill height, maintain aspect ratio, align to right edge
+      const scale = lowerHeight / bgImage.naturalHeight;
+      const drawW = bgImage.naturalWidth * scale;
+      const drawH = lowerHeight;
+      const drawX = width - drawW; // right-aligned
+      ctx.drawImage(bgImage, drawX, bodyTop, drawW, drawH);
     } catch {
       ctx.fillStyle = controls.background.value;
       ctx.fillRect(0, bodyTop, width, lowerHeight);
