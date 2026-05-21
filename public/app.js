@@ -166,11 +166,12 @@ async function drawCard(data = currentData) {
   currentData = data;
 
   const width = Number(controls.width.value) || 900;
-  const imageHeight = Math.round(width * 5 / 4); // locked 4:5 ratio, never changes
+  const totalHeight = Math.round(width * 5 / 4); // overall card is 4:5
+  const imageHeight = Math.round(width * 9 / 16); // top photo is always 16:9
   const trimHeight = Math.max(7, Math.round(width * 0.014));
   const padding = Math.round(width * 0.062);
   const gap = Math.round(width * 0.042);
-  const lowerHeight = Math.round(width * 0.55); // fixed text panel height
+  const lowerHeight = totalHeight - imageHeight - trimHeight; // text panel fills the rest
 
   const titleBase = Number(controls.titleSize.value) || Math.round(width * 0.069);
   const titleMaxWidth = width - padding * 2;
@@ -180,7 +181,7 @@ async function drawCard(data = currentData) {
   const sourceRowHeight = uploadedLogoSrc ? logoSize : labelSize;
 
   canvas.width = width;
-  canvas.height = imageHeight + trimHeight + lowerHeight;
+  canvas.height = totalHeight;
 
   ctx.fillStyle = controls.background.value;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
