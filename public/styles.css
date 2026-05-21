@@ -166,7 +166,7 @@ canvas {
   padding: 22px;
 }
 .app-shell {
-    padding: 0;
+    gap: 0;
 }
 
   h1 {
