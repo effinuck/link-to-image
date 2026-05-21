@@ -13,15 +13,17 @@ const controls = {
   background: document.querySelector("#backgroundColor"),
   text: document.querySelector("#textColor"),
   trim: document.querySelector("#trimColor"),
-  logoUpload: document.querySelector("#logoUpload")
+  logoUpload: document.querySelector("#logoUpload"),
+  bgImageUpload: document.querySelector("#bgImageUpload")
 };
 
 let uploadedLogoSrc = "";
+let uploadedBgImageSrc = "";
 
 const defaultData = {
-  displayUrl: "irishmirror.ie",
-  title: "What time and TV channel is Kilkenny v Galway on in the Leinster U20 final?",
-  image: "/sample-image.svg"
+  displayUrl: "sitename.com",
+  title: "Title of the webpage or article will appear here",
+  image: "https://images.unsplash.com/photo-1558637845-c8b7ead71a3e?q=80&w=1632&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
 };
 
 const defaultControls = {
@@ -85,11 +87,13 @@ function drawCoverImage(image, x, y, width, height) {
   let sh = image.naturalHeight;
 
   if (sourceRatio > targetRatio) {
+    // Image is wider than target: crop sides equally (centre crop)
     sw = image.naturalHeight * targetRatio;
     sx = (image.naturalWidth - sw) / 2;
   } else {
+    // Image is taller than target: crop from bottom only (keep top)
     sh = image.naturalWidth / targetRatio;
-    sy = (image.naturalHeight - sh) / 2;
+    sy = 0;
   }
 
   ctx.drawImage(image, sx, sy, sw, sh, x, y, width, height);
@@ -139,15 +143,51 @@ async function drawLogo(data, x, y, size) {
   }
 }
 
+function decodeHtmlEntities(str) {
+  return str
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(Number(dec)))
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&ndash;/g, "–")
+    .replace(/&mdash;/g, "—")
+    .replace(/&lsquo;/g, "\u2018")
+    .replace(/&rsquo;/g, "\u2019")
+    .replace(/&ldquo;/g, "\u201C")
+    .replace(/&rdquo;/g, "\u201D");
+}
+
 async function drawCard(data = currentData) {
   currentData = data;
 
   const width = Number(controls.width.value) || 900;
   const imageHeight = Math.round(width * 9 / 16);
-  const lowerHeight = Math.round(width * 0.55);
   const trimHeight = Math.max(7, Math.round(width * 0.014));
   const padding = Math.round(width * 0.062);
   const gap = Math.round(width * 0.042);
+
+  // Calculate how much vertical space the text content needs
+  const titleBase = Number(controls.titleSize.value) || Math.round(width * 0.069);
+  const titleMaxWidth = width - padding * 2;
+  const rawTitle = decodeHtmlEntities(data.title || "Untitled page");
+
+  // Measure text layout before sizing canvas
+  ctx.canvas.width = width; // temp width to allow measurement
+  const { lines, size } = wrapText(ctx, rawTitle, titleMaxWidth, titleBase, 20);
+  const lineHeight = Math.round(size * 1.2);
+  const logoSize = Math.round(width * 0.059);
+  const labelSize = Math.round(width * 0.043);
+  const sourceRowHeight = uploadedLogoSrc ? logoSize : labelSize;
+
+  // lowerHeight: enough to fit all lines + source row + gaps + bottom padding
+  const neededLower = gap + sourceRowHeight + gap + lines.length * lineHeight + padding;
+  const minLower = Math.round(width * 0.38);
+  const lowerHeight = Math.max(minLower, neededLower);
 
   canvas.width = width;
   canvas.height = imageHeight + trimHeight + lowerHeight;
@@ -170,16 +210,24 @@ async function drawCard(data = currentData) {
   ctx.fillRect(0, imageHeight, width, trimHeight);
 
   const bodyTop = imageHeight + trimHeight;
-  ctx.fillStyle = controls.background.value;
-  ctx.fillRect(0, bodyTop, width, lowerHeight);
+
+  // Draw background image behind text area if uploaded
+  if (uploadedBgImageSrc) {
+    try {
+      const bgImage = await loadImage(uploadedBgImageSrc);
+      ctx.drawImage(bgImage, 0, bodyTop, width, lowerHeight);
+    } catch {
+      ctx.fillStyle = controls.background.value;
+      ctx.fillRect(0, bodyTop, width, lowerHeight);
+    }
+  } else {
+    ctx.fillStyle = controls.background.value;
+    ctx.fillRect(0, bodyTop, width, lowerHeight);
+  }
 
   const displayUrl = data.displayUrl || "";
-  const logoSize = Math.round(width * 0.059);
-  const labelSize = Math.round(width * 0.043);
-  const sourceGap = gap;
-  const sourceTop = bodyTop + sourceGap;
+  const sourceTop = bodyTop + gap;
   const hasLogo = await drawLogo(data, padding, sourceTop, logoSize);
-  const sourceRowHeight = hasLogo ? logoSize : labelSize;
   const sourceX = hasLogo ? padding + logoSize + Math.round(width * 0.022) : padding;
   const sourceBaseline = hasLogo
     ? sourceTop + Math.round(logoSize * 0.72)
@@ -189,21 +237,12 @@ async function drawCard(data = currentData) {
   ctx.fillStyle = controls.trim.value;
   ctx.fillText(displayUrl, sourceX, sourceBaseline);
 
-  const titleBase = Number(controls.titleSize.value) || Math.round(width * 0.069);
-  const titleMaxWidth = width - padding * 2;
-  const { lines, size } = wrapText(ctx, data.title || "Untitled page", titleMaxWidth, titleBase, 34);
-  const lineHeight = Math.round(size * 1.2);
-  const titleTop = sourceTop + sourceRowHeight + sourceGap;
-  const maxLines = Math.max(2, Math.floor((canvas.height - titleTop - padding) / lineHeight));
-  const visibleLines = lines.slice(0, maxLines);
-  if (lines.length > visibleLines.length) {
-    visibleLines[visibleLines.length - 1] = `${visibleLines.at(-1).replace(/[.,;:!?]*$/, "")}...`;
-  }
+  const titleTop = sourceTop + sourceRowHeight + gap;
 
   ctx.fillStyle = controls.text.value;
   ctx.font = `700 ${size}px ${fontStack}`;
   let y = titleTop + size;
-  for (const line of visibleLines) {
+  for (const line of lines) {
     ctx.fillText(line, padding, y);
     y += lineHeight;
   }
@@ -238,7 +277,9 @@ resetButton.addEventListener("click", async () => {
   controls.text.value = defaultControls.text;
   controls.trim.value = defaultControls.trim;
   controls.logoUpload.value = "";
+  controls.bgImageUpload.value = "";
   uploadedLogoSrc = "";
+  uploadedBgImageSrc = "";
   await drawCard({ ...defaultData });
   setStatus("Reset.");
 });
@@ -262,9 +303,9 @@ controls.logoUpload.addEventListener("change", () => {
     return;
   }
 
-  if (file.type !== "image/png") {
+  if (file.type !== "image/png" && file.type !== "image/svg+xml") {
     controls.logoUpload.value = "";
-    setStatus("Please upload a PNG logo.");
+    setStatus("Please upload a PNG or SVG logo.");
     return;
   }
 
@@ -273,6 +314,23 @@ controls.logoUpload.addEventListener("change", () => {
     uploadedLogoSrc = typeof reader.result === "string" ? reader.result : "";
     await drawCard(currentData);
     setStatus("Logo added.");
+  });
+  reader.readAsDataURL(file);
+});
+
+controls.bgImageUpload.addEventListener("change", () => {
+  const file = controls.bgImageUpload.files?.[0];
+  if (!file) {
+    uploadedBgImageSrc = "";
+    drawCard(currentData);
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.addEventListener("load", async () => {
+    uploadedBgImageSrc = typeof reader.result === "string" ? reader.result : "";
+    await drawCard(currentData);
+    setStatus("Background image added.");
   });
   reader.readAsDataURL(file);
 });
