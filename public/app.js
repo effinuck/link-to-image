@@ -166,28 +166,18 @@ async function drawCard(data = currentData) {
   currentData = data;
 
   const width = Number(controls.width.value) || 900;
-  const imageHeight = Math.round(width * 9 / 16);
+  const imageHeight = Math.round(width * 5 / 4); // locked 4:5 ratio, never changes
   const trimHeight = Math.max(7, Math.round(width * 0.014));
   const padding = Math.round(width * 0.062);
   const gap = Math.round(width * 0.042);
+  const lowerHeight = Math.round(width * 0.55); // fixed text panel height
 
-  // Calculate how much vertical space the text content needs
   const titleBase = Number(controls.titleSize.value) || Math.round(width * 0.069);
   const titleMaxWidth = width - padding * 2;
   const rawTitle = decodeHtmlEntities(data.title || "Untitled page");
-
-  // Measure text layout before sizing canvas
-  ctx.canvas.width = width; // temp width to allow measurement
-  const { lines, size } = wrapText(ctx, rawTitle, titleMaxWidth, titleBase, 20);
-  const lineHeight = Math.round(size * 1.2);
   const logoSize = Math.round(width * 0.059);
   const labelSize = Math.round(width * 0.043);
   const sourceRowHeight = uploadedLogoSrc ? logoSize : labelSize;
-
-  // lowerHeight: enough to fit all lines + source row + gaps + bottom padding
-  const neededLower = gap + sourceRowHeight + gap + lines.length * lineHeight + padding;
-  const minLower = Math.round(width * 0.38);
-  const lowerHeight = Math.max(minLower, neededLower);
 
   canvas.width = width;
   canvas.height = imageHeight + trimHeight + lowerHeight;
@@ -238,13 +228,27 @@ async function drawCard(data = currentData) {
   ctx.fillText(displayUrl, sourceX, sourceBaseline);
 
   const titleTop = sourceTop + sourceRowHeight + gap;
+  const titleAreaBottom = bodyTop + lowerHeight - padding;
+
+  // Measure and wrap title within fixed panel
+  const { lines, size } = wrapText(ctx, rawTitle, titleMaxWidth, titleBase, 20);
+  const lineHeight = Math.round(size * 1.2);
+
+  // Only draw lines that fit within the fixed text panel
+  const maxLines = Math.max(1, Math.floor((titleAreaBottom - titleTop) / lineHeight));
+  const visibleLines = lines.slice(0, maxLines);
+  const isClipped = lines.length > visibleLines.length;
 
   ctx.fillStyle = controls.text.value;
   ctx.font = `700 ${size}px ${fontStack}`;
   let y = titleTop + size;
-  for (const line of lines) {
+  for (const line of visibleLines) {
     ctx.fillText(line, padding, y);
     y += lineHeight;
+  }
+
+  if (isClipped) {
+    setStatus("⚠️ Title is cropped — reduce the font size to fit.");
   }
 }
 
