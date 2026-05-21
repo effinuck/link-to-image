@@ -156,8 +156,18 @@ canvas {
 @media (max-width: 900px) {
   .app-shell {
     grid-template-columns: 1fr;
-    padding: 16px;
+    padding: 0;
   }
+	
+.preview-panel {
+  display: grid;
+  place-items: start center;
+  overflow: auto;
+  padding: 22px;
+}
+.app-shell {
+    padding: 0;
+}
 
   h1 {
     max-width: 18ch;
