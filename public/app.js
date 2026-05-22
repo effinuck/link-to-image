@@ -9,6 +9,7 @@ const fontStack = "Poppins, Arial, sans-serif";
 
 const controls = {
   titleSize: document.querySelector("#titleSize"),
+  imageAlign: document.querySelector("#imageAlign"),
   background: document.querySelector("#backgroundColor"),
   text: document.querySelector("#textColor"),
   trim: document.querySelector("#trimColor"),
@@ -186,12 +187,21 @@ async function drawCard(data = currentData) {
 
   try {
     const image = await loadImage(proxiedImageUrl(data.image));
-    // Fit to height, crop left and right (centre crop horizontally)
     const scale = imageHeight / image.naturalHeight;
     const drawW = image.naturalWidth * scale;
     const drawH = imageHeight;
-    const drawX = (width - drawW) / 2; // centre horizontally
-    ctx.drawImage(image, drawX, 0, drawW, drawH);
+
+    if (drawW >= width) {
+      // Image is wide enough to fill — fit to height, crop left/right per alignment
+      const align = controls.imageAlign.value;
+      const drawX = align === "left" ? 0 : align === "right" ? width - drawW : (width - drawW) / 2;
+      ctx.drawImage(image, drawX, 0, drawW, drawH);
+    } else {
+      // Image is too narrow — fit to width instead, crop top/bottom from top
+      const scaleW = width / image.naturalWidth;
+      const fitH = image.naturalHeight * scaleW;
+      ctx.drawImage(image, 0, 0, width, fitH);
+    }
   } catch {
     ctx.fillStyle = "#20242b";
     ctx.fillRect(0, 0, width, imageHeight);
@@ -303,7 +313,7 @@ downloadButton.addEventListener("click", () => {
   link.click();
 });
 
-for (const control of [controls.titleSize, controls.background, controls.text, controls.trim]) {
+for (const control of [controls.titleSize, controls.background, controls.text, controls.trim, controls.imageAlign]) {
   control.addEventListener("input", () => drawCard(currentData));
 }
 
