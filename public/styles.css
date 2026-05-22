@@ -79,7 +79,8 @@ h1 {
   align-items: stretch;
 }
 
-input {
+input,
+select {
   min-width: 0;
   width: 100%;
   height: 44px;
