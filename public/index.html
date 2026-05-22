@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Link to Image</title>
+    <title>Link Preview Card Agent</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
@@ -29,10 +29,6 @@
 
         <div class="settings-grid">
           <label>
-            Image Width
-            <input id="cardWidth" type="number" min="640" max="1600" step="10" value="900">
-          </label>
-          <label>
             Title Size
             <input id="titleSize" type="number" min="40" max="92" step="1" value="58">
           </label>
@@ -48,11 +44,11 @@
             Trim/Source colour
             <input id="trimColor" type="color" value="#f0d13a">
           </label>
-          <label>
+          <label class="span-full">
             Logo Image
             <input id="logoUpload" type="file" accept="image/png,image/svg+xml">
           </label>
-          <label>
+          <label class="span-full">
             Text Background Image
             <input id="bgImageUpload" type="file" accept="image/*">
           </label>

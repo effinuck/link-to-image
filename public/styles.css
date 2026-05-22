@@ -129,6 +129,10 @@ button:hover {
   gap: 14px;
 }
 
+.settings-grid .span-full {
+  grid-column: 1 / -1;
+}
+
 .status {
   min-height: 22px;
   color: #a8afb9;

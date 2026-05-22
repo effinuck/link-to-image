@@ -8,7 +8,6 @@ const ctx = canvas.getContext("2d");
 const fontStack = "Poppins, Arial, sans-serif";
 
 const controls = {
-  width: document.querySelector("#cardWidth"),
   titleSize: document.querySelector("#titleSize"),
   background: document.querySelector("#backgroundColor"),
   text: document.querySelector("#textColor"),
@@ -27,7 +26,6 @@ const defaultData = {
 };
 
 const defaultControls = {
-  width: "900",
   titleSize: "58",
   background: "#000000",
   text: "#f4f5fb",
@@ -165,13 +163,13 @@ function decodeHtmlEntities(str) {
 async function drawCard(data = currentData) {
   currentData = data;
 
-  const width = Number(controls.width.value) || 900;
+  const width = 900;
   const totalHeight = Math.round(width * 5 / 4); // overall card is 4:5
-  const imageHeight = Math.round(width * 9 / 16); // top photo is always 16:9
+  const imageHeight = Math.round(totalHeight / 2); // top photo fills exactly half the card
   const trimHeight = Math.max(7, Math.round(width * 0.014));
   const padding = Math.round(width * 0.062);
   const gap = Math.round(width * 0.042);
-  const lowerHeight = totalHeight - imageHeight - trimHeight; // text panel fills the rest
+  const lowerHeight = totalHeight - imageHeight - trimHeight;
 
   const titleBase = Number(controls.titleSize.value) || Math.round(width * 0.069);
   const titleMaxWidth = width - padding * 2;
@@ -188,7 +186,12 @@ async function drawCard(data = currentData) {
 
   try {
     const image = await loadImage(proxiedImageUrl(data.image));
-    drawCoverImage(image, 0, 0, width, imageHeight);
+    // Fit to height, crop left and right (centre crop horizontally)
+    const scale = imageHeight / image.naturalHeight;
+    const drawW = image.naturalWidth * scale;
+    const drawH = imageHeight;
+    const drawX = (width - drawW) / 2; // centre horizontally
+    ctx.drawImage(image, drawX, 0, drawW, drawH);
   } catch {
     ctx.fillStyle = "#20242b";
     ctx.fillRect(0, 0, width, imageHeight);
@@ -281,7 +284,6 @@ form.addEventListener("submit", async (event) => {
 
 resetButton.addEventListener("click", async () => {
   urlInput.value = "";
-  controls.width.value = defaultControls.width;
   controls.titleSize.value = defaultControls.titleSize;
   controls.background.value = defaultControls.background;
   controls.text.value = defaultControls.text;
@@ -301,7 +303,7 @@ downloadButton.addEventListener("click", () => {
   link.click();
 });
 
-for (const control of [controls.width, controls.titleSize, controls.background, controls.text, controls.trim]) {
+for (const control of [controls.titleSize, controls.background, controls.text, controls.trim]) {
   control.addEventListener("input", () => drawCard(currentData));
 }
 
