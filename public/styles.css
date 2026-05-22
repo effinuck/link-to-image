@@ -134,7 +134,60 @@ button:hover {
   grid-column: 1 / -1;
 }
 
-.status {
+.tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid #2c3038;
+}
+
+.tab {
+  flex: 1;
+  min-height: 38px;
+  border: 1px solid #2c3038;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  padding: 0 14px;
+  background: transparent;
+  color: #a8afb9;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.03em;
+}
+
+.tab:hover {
+  background: #1e2228;
+  color: #f4f5fb;
+}
+
+.tab.active {
+  background: #191c21;
+  color: #f4f5fb;
+  border-color: #2c3038;
+  position: relative;
+}
+
+.tab.active::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: #191c21;
+}
+
+textarea {
+  font: inherit;
+  min-width: 0;
+  width: 100%;
+  border: 1px solid #3b414c;
+  border-radius: 6px;
+  padding: 10px 12px;
+  background: #0d0f12;
+  color: #f4f5fb;
+  resize: vertical;
+}
   min-height: 22px;
   color: #a8afb9;
   font-size: 14px;

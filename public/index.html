@@ -19,12 +19,27 @@
           <button class="ghost-button" id="resetButton" type="button">RESET</button>
         </div>
 
+        <div class="tabs" role="tablist">
+          <button class="tab active" id="tabAuto" role="tab" aria-selected="true" type="button">Auto-generate</button>
+          <button class="tab" id="tabManual" role="tab" aria-selected="false" type="button">Manual</button>
+        </div>
+
         <form class="url-form" id="urlForm">
           <label for="urlInput">Webpage Link</label>
           <div class="input-row">
             <input id="urlInput" name="url" type="url" placeholder="https://example.com/article" autocomplete="url" required>
             <button type="submit">GENERATE</button>
           </div>
+        </form>
+
+        <form class="url-form" id="manualForm" hidden>
+          <label for="manualImage">Image URL</label>
+          <input id="manualImage" type="url" placeholder="https://example.com/image.jpg">
+          <label for="manualSource">Source / Site name</label>
+          <input id="manualSource" type="text" placeholder="irishtimes.com">
+          <label for="manualTitle">Title</label>
+          <textarea id="manualTitle" rows="3" placeholder="Enter the article title here..."></textarea>
+          <button type="submit">GENERATE</button>
         </form>
 
         <div class="settings-grid">

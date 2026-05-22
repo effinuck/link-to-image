@@ -1,5 +1,11 @@
 const form = document.querySelector("#urlForm");
 const urlInput = document.querySelector("#urlInput");
+const manualForm = document.querySelector("#manualForm");
+const manualImage = document.querySelector("#manualImage");
+const manualSource = document.querySelector("#manualSource");
+const manualTitle = document.querySelector("#manualTitle");
+const tabAuto = document.querySelector("#tabAuto");
+const tabManual = document.querySelector("#tabManual");
 const resetButton = document.querySelector("#resetButton");
 const downloadButton = document.querySelector("#downloadButton");
 const statusEl = document.querySelector("#status");
@@ -278,7 +284,42 @@ async function fetchMetadata(url) {
   return body;
 }
 
-form.addEventListener("submit", async (event) => {
+// Tab switching
+tabAuto.addEventListener("click", () => {
+  tabAuto.classList.add("active");
+  tabAuto.setAttribute("aria-selected", "true");
+  tabManual.classList.remove("active");
+  tabManual.setAttribute("aria-selected", "false");
+  form.hidden = false;
+  manualForm.hidden = true;
+});
+
+tabManual.addEventListener("click", () => {
+  tabManual.classList.add("active");
+  tabManual.setAttribute("aria-selected", "true");
+  tabAuto.classList.remove("active");
+  tabAuto.setAttribute("aria-selected", "false");
+  manualForm.hidden = false;
+  form.hidden = true;
+});
+
+// Manual form submit
+manualForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const imageUrl = manualImage.value.trim();
+  const source = manualSource.value.trim() || "source.com";
+  const title = manualTitle.value.trim() || "Untitled";
+
+  setStatus("Drawing the card...");
+  await drawCard({
+    displayUrl: source,
+    title,
+    image: imageUrl || defaultData.image
+  });
+  setStatus("Card ready.");
+});
+
+
   event.preventDefault();
   setStatus("Reading the page...");
 
@@ -294,6 +335,9 @@ form.addEventListener("submit", async (event) => {
 
 resetButton.addEventListener("click", async () => {
   urlInput.value = "";
+  manualImage.value = "";
+  manualSource.value = "";
+  manualTitle.value = "";
   controls.titleSize.value = defaultControls.titleSize;
   controls.background.value = defaultControls.background;
   controls.text.value = defaultControls.text;
