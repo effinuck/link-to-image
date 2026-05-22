@@ -1,7 +1,7 @@
 const form = document.querySelector("#urlForm");
 const urlInput = document.querySelector("#urlInput");
 const manualForm = document.querySelector("#manualForm");
-const manualImage = document.querySelector("#manualImage");
+const manualImageUpload = document.querySelector("#manualImageUpload");
 const manualSource = document.querySelector("#manualSource");
 const manualTitle = document.querySelector("#manualTitle");
 const tabAuto = document.querySelector("#tabAuto");
@@ -131,7 +131,7 @@ function loadImage(src) {
 
 function proxiedImageUrl(src) {
   if (!src) return "";
-  if (src.startsWith("/") || src.startsWith(location.origin)) return src;
+  if (src.startsWith("data:") || src.startsWith("/") || src.startsWith(location.origin)) return src;
   return `/api/image?url=${encodeURIComponent(src)}`;
 }
 
@@ -306,16 +306,20 @@ tabManual.addEventListener("click", () => {
 // Manual form submit
 manualForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  const imageUrl = manualImage.value.trim();
   const source = manualSource.value.trim() || "source.com";
   const title = manualTitle.value.trim() || "Untitled";
+  const file = manualImageUpload.files?.[0];
+
+  const getImageSrc = () => new Promise((resolve) => {
+    if (!file) { resolve(defaultData.image); return; }
+    const reader = new FileReader();
+    reader.addEventListener("load", () => resolve(reader.result));
+    reader.readAsDataURL(file);
+  });
 
   setStatus("Drawing the card...");
-  await drawCard({
-    displayUrl: source,
-    title,
-    image: imageUrl || defaultData.image
-  });
+  const imageSrc = await getImageSrc();
+  await drawCard({ displayUrl: source, title, image: imageSrc });
   setStatus("Card ready.");
 });
 
@@ -335,7 +339,7 @@ manualForm.addEventListener("submit", async (event) => {
 
 resetButton.addEventListener("click", async () => {
   urlInput.value = "";
-  manualImage.value = "";
+  manualImageUpload.value = "";
   manualSource.value = "";
   manualTitle.value = "";
   controls.titleSize.value = defaultControls.titleSize;
