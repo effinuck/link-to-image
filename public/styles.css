@@ -188,6 +188,17 @@ textarea {
   color: #f4f5fb;
   resize: vertical;
 }
+
+.mode-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.mode-panel[hidden] {
+  display: none;
+}
+
+.status {
   min-height: 22px;
   color: #a8afb9;
   font-size: 14px;

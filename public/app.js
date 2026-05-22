@@ -6,6 +6,8 @@ const manualSource = document.querySelector("#manualSource");
 const manualTitle = document.querySelector("#manualTitle");
 const tabAuto = document.querySelector("#tabAuto");
 const tabManual = document.querySelector("#tabManual");
+const autoPanel = document.querySelector("#autoPanel");
+const manualPanel = document.querySelector("#manualPanel");
 const resetButton = document.querySelector("#resetButton");
 const downloadButton = document.querySelector("#downloadButton");
 const statusEl = document.querySelector("#status");
@@ -284,24 +286,18 @@ async function fetchMetadata(url) {
   return body;
 }
 
-// Tab switching
-tabAuto.addEventListener("click", () => {
-  tabAuto.classList.add("active");
-  tabAuto.setAttribute("aria-selected", "true");
-  tabManual.classList.remove("active");
-  tabManual.setAttribute("aria-selected", "false");
-  form.hidden = false;
-  manualForm.hidden = true;
-});
+function setMode(mode) {
+  const isManual = mode === "manual";
+  tabAuto.classList.toggle("active", !isManual);
+  tabAuto.setAttribute("aria-selected", String(!isManual));
+  tabManual.classList.toggle("active", isManual);
+  tabManual.setAttribute("aria-selected", String(isManual));
+  autoPanel.hidden = isManual;
+  manualPanel.hidden = !isManual;
+}
 
-tabManual.addEventListener("click", () => {
-  tabManual.classList.add("active");
-  tabManual.setAttribute("aria-selected", "true");
-  tabAuto.classList.remove("active");
-  tabAuto.setAttribute("aria-selected", "false");
-  manualForm.hidden = false;
-  form.hidden = true;
-});
+tabAuto.addEventListener("click", () => setMode("auto"));
+tabManual.addEventListener("click", () => setMode("manual"));
 
 // Manual form submit
 manualForm.addEventListener("submit", async (event) => {
@@ -323,7 +319,7 @@ manualForm.addEventListener("submit", async (event) => {
   setStatus("Card ready.");
 });
 
-
+form.addEventListener("submit", async (event) => {
   event.preventDefault();
   setStatus("Reading the page...");
 
