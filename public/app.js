@@ -350,31 +350,46 @@ resetButton.addEventListener("click", async () => {
   setStatus("Reset.");
 });
 
-downloadButton.addEventListener("click", async () => {
+function triggerDownload() {
   const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
-  const filename = "link-preview-card.jpg";
-
-  // On mobile, use Web Share API so the OS routes to camera roll / photos app
-  if (navigator.canShare) {
-    try {
-      const blob = await (await fetch(dataUrl)).blob();
-      const file = new File([blob], filename, { type: "image/jpeg" });
-      if (navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: filename });
-        return;
-      }
-    } catch (err) {
-      // User cancelled the share sheet — don't fall through to download
-      if (err.name === "AbortError") return;
-      // Any other error: fall through to standard download below
-    }
-  }
-
-  // Desktop / browsers without file sharing support
   const link = document.createElement("a");
-  link.download = filename;
+  link.download = "link-preview-card.jpg";
   link.href = dataUrl;
   link.click();
+}
+
+downloadButton.addEventListener("click", triggerDownload);
+
+// ── Share modal ───────────────────────────────────────────
+const shareButton      = document.querySelector("#shareButton");
+const shareOverlay     = document.querySelector("#shareOverlay");
+const shareClose       = document.querySelector("#shareClose");
+const sharePreviewImg  = document.querySelector("#sharePreviewImg");
+const shareDownloadBtn = document.querySelector("#shareDownloadBtn");
+
+function openShareModal() {
+  sharePreviewImg.src = canvas.toDataURL("image/jpeg", 0.92);
+  shareOverlay.hidden = false;
+  document.body.style.overflow = "hidden";
+}
+
+function closeShareModal() {
+  shareOverlay.hidden = true;
+  document.body.style.overflow = "";
+}
+
+shareButton.addEventListener("click", openShareModal);
+shareClose.addEventListener("click", closeShareModal);
+shareDownloadBtn.addEventListener("click", () => { triggerDownload(); closeShareModal(); });
+
+// Close on backdrop click
+shareOverlay.addEventListener("click", (e) => {
+  if (e.target === shareOverlay) closeShareModal();
+});
+
+// Close on Escape
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !shareOverlay.hidden) closeShareModal();
 });
 
 for (const control of [controls.titleSize, controls.background, controls.text, controls.trim, controls.imageAlign]) {
