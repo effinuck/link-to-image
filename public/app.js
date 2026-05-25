@@ -351,14 +351,14 @@ resetButton.addEventListener("click", async () => {
 });
 
 downloadButton.addEventListener("click", async () => {
-  const dataUrl = canvas.toDataURL("image/png");
-  const filename = "link-preview-card.png";
+  const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+  const filename = "link-preview-card.jpg";
 
   // On mobile, use Web Share API so the OS routes to camera roll / photos app
   if (navigator.canShare) {
     try {
       const blob = await (await fetch(dataUrl)).blob();
-      const file = new File([blob], filename, { type: "image/png" });
+      const file = new File([blob], filename, { type: "image/jpeg" });
       if (navigator.canShare({ files: [file] })) {
         await navigator.share({ files: [file], title: filename });
         return;
