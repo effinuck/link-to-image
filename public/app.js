@@ -350,10 +350,30 @@ resetButton.addEventListener("click", async () => {
   setStatus("Reset.");
 });
 
-downloadButton.addEventListener("click", () => {
+downloadButton.addEventListener("click", async () => {
+  const dataUrl = canvas.toDataURL("image/png");
+  const filename = "link-preview-card.png";
+
+  // On mobile, use Web Share API so the OS routes to camera roll / photos app
+  if (navigator.canShare) {
+    try {
+      const blob = await (await fetch(dataUrl)).blob();
+      const file = new File([blob], filename, { type: "image/png" });
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: filename });
+        return;
+      }
+    } catch (err) {
+      // User cancelled the share sheet — don't fall through to download
+      if (err.name === "AbortError") return;
+      // Any other error: fall through to standard download below
+    }
+  }
+
+  // Desktop / browsers without file sharing support
   const link = document.createElement("a");
-  link.download = "link-preview-card.png";
-  link.href = canvas.toDataURL("image/png");
+  link.download = filename;
+  link.href = dataUrl;
   link.click();
 });
 
