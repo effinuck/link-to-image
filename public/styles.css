@@ -398,3 +398,28 @@ canvas {
   background: linear-gradient(135deg, #f58529, #dd2a7b 40%, #8134af 70%, #515bd4);
 }
 .share-btn--meta { background: #0064e0; }
+
+/* ── Meta clipboard toast ────────────────────────────────── */
+.meta-toast {
+  padding: 11px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.meta-toast[data-type="success"] {
+  background: #0d2e0d;
+  border: 1px solid #1a5c1a;
+  color: #6fcf6f;
+}
+
+.meta-toast[data-type="info"] {
+  background: #1a1f2e;
+  border: 1px solid #2c3a5c;
+  color: #93b4f0;
+}
+
+.meta-toast[hidden] {
+  display: none;
+}

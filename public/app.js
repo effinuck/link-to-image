@@ -392,6 +392,43 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && !shareOverlay.hidden) closeShareModal();
 });
 
+// ── Meta Business Suite — copy to clipboard then open ────
+const shareMetaBtn = document.querySelector("#shareMeta");
+
+shareMetaBtn.addEventListener("click", async (e) => {
+  e.preventDefault();
+
+  const toastEl = document.querySelector("#metaToast");
+
+  try {
+    // Convert canvas to a PNG blob (clipboard API requires PNG)
+    const blob = await new Promise((res, rej) =>
+      canvas.toBlob(b => b ? res(b) : rej(new Error("Blob failed")), "image/png")
+    );
+
+    await navigator.clipboard.write([
+      new ClipboardItem({ "image/png": blob })
+    ]);
+
+    // Show success toast then open MBS
+    showToast(toastEl, "✓ Image copied! Paste it into your new post.", "success");
+  } catch {
+    // Clipboard API not supported (e.g. iOS Safari) — fall back to just opening MBS
+    showToast(toastEl, "Open MBS and attach the downloaded image to your post.", "info");
+  }
+
+  // Open Meta Business Suite after a short delay so toast is visible
+  setTimeout(() => window.open("https://business.facebook.com/", "_blank", "noopener"), 900);
+});
+
+function showToast(el, message, type) {
+  el.textContent = message;
+  el.dataset.type = type;
+  el.hidden = false;
+  clearTimeout(el._hideTimer);
+  el._hideTimer = setTimeout(() => { el.hidden = true; }, 3500);
+}
+
 for (const control of [controls.titleSize, controls.background, controls.text, controls.trim, controls.imageAlign]) {
   control.addEventListener("input", () => drawCard(currentData));
 }
