@@ -369,7 +369,7 @@ canvas {
 
 .share-buttons {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
 
@@ -397,3 +397,4 @@ canvas {
 .share-btn--instagram {
   background: linear-gradient(135deg, #f58529, #dd2a7b 40%, #8134af 70%, #515bd4);
 }
+.share-btn--meta { background: #0064e0; }
