@@ -350,15 +350,53 @@ resetButton.addEventListener("click", async () => {
   setStatus("Reset.");
 });
 
-function triggerDownload() {
-  const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+// ── Helpers ───────────────────────────────────────────────
+function isPwa() {
+  return window.matchMedia("(display-mode: standalone)").matches ||
+    window.navigator.standalone === true;
+}
+
+async function getImageBlob() {
+  return new Promise((res, rej) =>
+    canvas.toBlob(b => b ? res(b) : rej(new Error("Could not generate image")), "image/png")
+  );
+}
+
+// ── Save / Download button ────────────────────────────────
+downloadButton.addEventListener("click", async () => {
+  const filename = "link-preview-card.png";
+
+  // When running as installed PWA on iOS, use Web Share API —
+  // this is the only path that surfaces "Save Image" in the share sheet
+  if (isPwa() && navigator.canShare) {
+    try {
+      const blob = await getImageBlob();
+      const file = new File([blob], filename, { type: "image/png" });
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: "Link Preview Card" });
+        return;
+      }
+    } catch (err) {
+      if (err.name === "AbortError") return; // user cancelled — do nothing
+      // fall through to regular download
+    }
+  }
+
+  // Desktop / non-PWA: standard anchor download
+  const dataUrl = canvas.toDataURL("image/png");
   const link = document.createElement("a");
-  link.download = "link-preview-card.jpg";
+  link.download = filename;
+  link.href = dataUrl;
+  link.click();
+});
+
+function triggerDownload() {
+  const dataUrl = canvas.toDataURL("image/png");
+  const link = document.createElement("a");
+  link.download = "link-preview-card.png";
   link.href = dataUrl;
   link.click();
 }
-
-downloadButton.addEventListener("click", triggerDownload);
 
 // ── Share modal ───────────────────────────────────────────
 const shareButton      = document.querySelector("#shareButton");
@@ -368,7 +406,7 @@ const sharePreviewImg  = document.querySelector("#sharePreviewImg");
 const shareDownloadBtn = document.querySelector("#shareDownloadBtn");
 
 function openShareModal() {
-  sharePreviewImg.src = canvas.toDataURL("image/jpeg", 0.92);
+  sharePreviewImg.src = canvas.toDataURL("image/png");
   shareOverlay.hidden = false;
   document.body.style.overflow = "hidden";
 }
@@ -392,42 +430,7 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && !shareOverlay.hidden) closeShareModal();
 });
 
-// ── Meta Business Suite — copy to clipboard then open ────
-const shareMetaBtn = document.querySelector("#shareMeta");
 
-shareMetaBtn.addEventListener("click", async (e) => {
-  e.preventDefault();
-
-  const toastEl = document.querySelector("#metaToast");
-
-  try {
-    // Convert canvas to a PNG blob (clipboard API requires PNG)
-    const blob = await new Promise((res, rej) =>
-      canvas.toBlob(b => b ? res(b) : rej(new Error("Blob failed")), "image/png")
-    );
-
-    await navigator.clipboard.write([
-      new ClipboardItem({ "image/png": blob })
-    ]);
-
-    // Show success toast then open MBS
-    showToast(toastEl, "✓ Image copied! Paste it into your new post.", "success");
-  } catch {
-    // Clipboard API not supported (e.g. iOS Safari) — fall back to just opening MBS
-    showToast(toastEl, "Open MBS and attach the downloaded image to your post.", "info");
-  }
-
-  // Open Meta Business Suite after a short delay so toast is visible
-  setTimeout(() => window.open("https://business.facebook.com/", "_blank", "noopener"), 900);
-});
-
-function showToast(el, message, type) {
-  el.textContent = message;
-  el.dataset.type = type;
-  el.hidden = false;
-  clearTimeout(el._hideTimer);
-  el._hideTimer = setTimeout(() => { el.hidden = true; }, 3500);
-}
 
 for (const control of [controls.titleSize, controls.background, controls.text, controls.trim, controls.imageAlign]) {
   control.addEventListener("input", () => drawCard(currentData));
