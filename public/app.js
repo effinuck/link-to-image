@@ -351,33 +351,34 @@ resetButton.addEventListener("click", async () => {
 });
 
 // ── Helpers ───────────────────────────────────────────────
-// ── DOWNLOAD IMAGE ────────────────────────────────────────
-// On mobile: Web Share API → shows native share sheet (Save Image, etc.)
-// On desktop: standard PNG file download
-downloadButton.addEventListener("click", async () => {
-  const filename = "link-preview-card.png";
+// ── DOWNLOAD IMAGE (desktop) / OPEN IMAGE (mobile) ───────
+const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-  if (navigator.canShare) {
-    try {
-      const blob = await new Promise((res, rej) =>
-        canvas.toBlob(b => b ? res(b) : rej(new Error("Blob failed")), "image/png")
+// Set button label based on device
+downloadButton.textContent = isMobile ? "🖼 OPEN IMAGE" : "⬇ DOWNLOAD IMAGE";
+
+downloadButton.addEventListener("click", () => {
+  const dataUrl = canvas.toDataURL("image/png");
+
+  if (isMobile) {
+    // Open PNG full-screen in a new tab — user can long-press → Save to Photos
+    const win = window.open("", "_blank");
+    if (win) {
+      win.document.write(
+        `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">` +
+        `<title>Link Preview Card</title>` +
+        `<style>*{margin:0;padding:0;background:#000}img{display:block;width:100%;height:auto}</style></head>` +
+        `<body><img src="${dataUrl}" alt="Link Preview Card"></body></html>`
       );
-      const file = new File([blob], filename, { type: "image/png" });
-      if (navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: "Link Preview Card" });
-        return;
-      }
-    } catch (err) {
-      if (err.name === "AbortError") return; // user cancelled
-      // fall through to standard download
+      win.document.close();
     }
+  } else {
+    // Desktop: standard file download
+    const link = document.createElement("a");
+    link.download = "link-preview-card.png";
+    link.href = dataUrl;
+    link.click();
   }
-
-  // Desktop fallback
-  const link = document.createElement("a");
-  link.download = filename;
-  link.href = canvas.toDataURL("image/png");
-  link.click();
 });
 
 

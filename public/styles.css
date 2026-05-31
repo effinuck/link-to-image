@@ -249,8 +249,20 @@ canvas {
     flex-direction: column;
   }
 
+  /* Keep 2-column grid on mobile — matches desktop behaviour */
   .settings-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* Text Background spans full width alone since it has no pair */
+  .settings-grid label:has(#backgroundColor) {
+    grid-column: 1 / -1;
+  }
+
+  /* Show number input spinner buttons on mobile (hidden by default in some browsers) */
+  input[type="number"] {
+    -webkit-appearance: auto;
+    appearance: auto;
   }
 }
 
