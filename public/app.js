@@ -351,33 +351,33 @@ resetButton.addEventListener("click", async () => {
 });
 
 // ── Helpers ───────────────────────────────────────────────
-// ── DOWNLOAD IMAGE — standard file download ───────────────
-downloadButton.addEventListener("click", () => {
-  const link = document.createElement("a");
-  link.download = "link-preview-card.png";
-  link.href = canvas.toDataURL("image/png");
-  link.click();
-});
+// ── DOWNLOAD IMAGE ────────────────────────────────────────
+// On mobile: Web Share API → shows native share sheet (Save Image, etc.)
+// On desktop: standard PNG file download
+downloadButton.addEventListener("click", async () => {
+  const filename = "link-preview-card.png";
 
-// ── SAVE TO GALLERY — Web Share API (PWA / iOS Safari) ────
-const galleryButton = document.querySelector("#galleryButton");
-
-galleryButton.addEventListener("click", async () => {
   if (navigator.canShare) {
     try {
       const blob = await new Promise((res, rej) =>
         canvas.toBlob(b => b ? res(b) : rej(new Error("Blob failed")), "image/png")
       );
-      const file = new File([blob], "link-preview-card.png", { type: "image/png" });
+      const file = new File([blob], filename, { type: "image/png" });
       if (navigator.canShare({ files: [file] })) {
         await navigator.share({ files: [file], title: "Link Preview Card" });
         return;
       }
     } catch (err) {
       if (err.name === "AbortError") return; // user cancelled
+      // fall through to standard download
     }
   }
-  setStatus("⚠️ Save to Gallery requires adding this app to your Home Screen in Safari first.");
+
+  // Desktop fallback
+  const link = document.createElement("a");
+  link.download = filename;
+  link.href = canvas.toDataURL("image/png");
+  link.click();
 });
 
 
