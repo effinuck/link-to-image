@@ -351,85 +351,34 @@ resetButton.addEventListener("click", async () => {
 });
 
 // ── Helpers ───────────────────────────────────────────────
-function isPwa() {
-  return window.matchMedia("(display-mode: standalone)").matches ||
-    window.navigator.standalone === true;
-}
+// ── DOWNLOAD IMAGE — standard file download ───────────────
+downloadButton.addEventListener("click", () => {
+  const link = document.createElement("a");
+  link.download = "link-preview-card.png";
+  link.href = canvas.toDataURL("image/png");
+  link.click();
+});
 
-async function getImageBlob() {
-  return new Promise((res, rej) =>
-    canvas.toBlob(b => b ? res(b) : rej(new Error("Could not generate image")), "image/png")
-  );
-}
+// ── SAVE TO GALLERY — Web Share API (PWA / iOS Safari) ────
+const galleryButton = document.querySelector("#galleryButton");
 
-// ── Save / Download button ────────────────────────────────
-downloadButton.addEventListener("click", async () => {
-  const filename = "link-preview-card.png";
-
-  // When running as installed PWA on iOS, use Web Share API —
-  // this is the only path that surfaces "Save Image" in the share sheet
-  if (isPwa() && navigator.canShare) {
+galleryButton.addEventListener("click", async () => {
+  if (navigator.canShare) {
     try {
-      const blob = await getImageBlob();
-      const file = new File([blob], filename, { type: "image/png" });
+      const blob = await new Promise((res, rej) =>
+        canvas.toBlob(b => b ? res(b) : rej(new Error("Blob failed")), "image/png")
+      );
+      const file = new File([blob], "link-preview-card.png", { type: "image/png" });
       if (navigator.canShare({ files: [file] })) {
         await navigator.share({ files: [file], title: "Link Preview Card" });
         return;
       }
     } catch (err) {
-      if (err.name === "AbortError") return; // user cancelled — do nothing
-      // fall through to regular download
+      if (err.name === "AbortError") return; // user cancelled
     }
   }
-
-  // Desktop / non-PWA: standard anchor download
-  const dataUrl = canvas.toDataURL("image/png");
-  const link = document.createElement("a");
-  link.download = filename;
-  link.href = dataUrl;
-  link.click();
+  setStatus("⚠️ Save to Gallery requires adding this app to your Home Screen in Safari first.");
 });
-
-function triggerDownload() {
-  const dataUrl = canvas.toDataURL("image/png");
-  const link = document.createElement("a");
-  link.download = "link-preview-card.png";
-  link.href = dataUrl;
-  link.click();
-}
-
-// ── Share modal ───────────────────────────────────────────
-const shareButton      = document.querySelector("#shareButton");
-const shareOverlay     = document.querySelector("#shareOverlay");
-const shareClose       = document.querySelector("#shareClose");
-const sharePreviewImg  = document.querySelector("#sharePreviewImg");
-const shareDownloadBtn = document.querySelector("#shareDownloadBtn");
-
-function openShareModal() {
-  sharePreviewImg.src = canvas.toDataURL("image/png");
-  shareOverlay.hidden = false;
-  document.body.style.overflow = "hidden";
-}
-
-function closeShareModal() {
-  shareOverlay.hidden = true;
-  document.body.style.overflow = "";
-}
-
-shareButton.addEventListener("click", openShareModal);
-shareClose.addEventListener("click", closeShareModal);
-shareDownloadBtn.addEventListener("click", () => { triggerDownload(); closeShareModal(); });
-
-// Close on backdrop click
-shareOverlay.addEventListener("click", (e) => {
-  if (e.target === shareOverlay) closeShareModal();
-});
-
-// Close on Escape
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && !shareOverlay.hidden) closeShareModal();
-});
-
 
 
 for (const control of [controls.titleSize, controls.background, controls.text, controls.trim, controls.imageAlign]) {
