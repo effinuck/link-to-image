@@ -249,79 +249,232 @@ canvas {
     flex-direction: column;
   }
 
-  /* Keep 2-column grid on mobile — matches desktop behaviour */
   .settings-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  /* Text Background spans full width alone since it has no pair */
-  .settings-grid label:has(#backgroundColor) {
-    grid-column: 1 / -1;
-  }
-
-  /* Show number input spinner buttons on mobile (hidden by default in some browsers) */
-  input[type="number"] {
-    -webkit-appearance: auto;
-    appearance: auto;
+    grid-template-columns: 1fr;
   }
 }
 
-
-/* ── Action buttons ──────────────────────────────────────── */
+/* ── Share modal ─────────────────────────────────────────── */
 .action-row {
   gap: 10px;
 }
 
-/* ── Title size stepper ──────────────────────────────────── */
-.stepper {
+.share-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
   display: flex;
-  align-items: stretch;
-  border: 1px solid #3b414c;
-  border-radius: 6px;
-  overflow: hidden;
-  height: 44px;
-}
-
-.stepper input[type="number"] {
-  flex: 1;
-  min-width: 0;
-  border: none;
-  border-radius: 0;
-  height: 100%;
-  text-align: center;
-  /* Hide native spinners — we have our own buttons */
-  -moz-appearance: textfield;
-  appearance: textfield;
-}
-
-.stepper input[type="number"]::-webkit-inner-spin-button,
-.stepper input[type="number"]::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-}
-
-.stepper-btn {
-  width: 40px;
-  min-height: unset;
-  height: 100%;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 100;
   padding: 0;
-  border: none;
-  border-left: 1px solid #3b414c;
-  border-radius: 0;
+  backdrop-filter: blur(4px);
+}
+
+.share-overlay[hidden] {
+  display: none;
+}
+
+.share-modal {
+  width: 100%;
+  max-width: 480px;
   background: #191c21;
+  border: 1px solid #2c3038;
+  border-radius: 18px 18px 0 0;
+  padding: 22px 22px 36px;
+  display: grid;
+  gap: 16px;
+}
+
+@media (min-width: 520px) {
+  .share-overlay {
+    align-items: center;
+  }
+  .share-modal {
+    border-radius: 14px;
+    margin: 16px;
+  }
+}
+
+.share-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.share-close {
+  min-height: unset;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 50%;
+  background: #2c3038;
   color: #f4f5fb;
-  font-size: 18px;
-  font-weight: 400;
-  line-height: 1;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.share-close:hover {
+  background: #3b414c;
+}
+
+.share-preview-img {
+  width: 100%;
+  aspect-ratio: 9 / 5;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #2c3038;
+}
+
+.share-hint {
+  color: #a8afb9;
+  font-size: 13px;
+  margin: 0;
+}
+
+.share-download-btn {
+  width: 100%;
+  background: #f4f5fb;
+  color: #08090b;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.share-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #3b414c;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.share-divider::before,
+.share-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #2c3038;
+}
+
+.share-divider span {
+  color: #a8afb9;
+}
+
+.share-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.share-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: opacity 0.15s;
+  color: #fff;
+}
+
+.share-btn:hover {
+  opacity: 0.85;
+}
+
+.share-btn--facebook { background: #1877f2; }
+.share-btn--twitter  { background: #000; border: 1px solid #2c3038; }
+.share-btn--instagram {
+  background: linear-gradient(135deg, #f58529, #dd2a7b 40%, #8134af 70%, #515bd4);
+}
+.share-btn--meta { background: #0064e0; }
+
+/* ── Meta clipboard toast ────────────────────────────────── */
+.meta-toast {
+  padding: 11px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.meta-toast[data-type="success"] {
+  background: #0d2e0d;
+  border: 1px solid #1a5c1a;
+  color: #6fcf6f;
+}
+
+.meta-toast[data-type="info"] {
+  background: #1a1f2e;
+  border: 1px solid #2c3a5c;
+  color: #93b4f0;
+}
+
+.meta-toast[hidden] {
+  display: none;
+}
+
+/* ── Swatch colour picker ────────────────────────────────── */
+.swatch-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.swatch {
+  width: 28px;
+  height: 28px;
+  min-height: unset;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  padding: 0;
   cursor: pointer;
   flex-shrink: 0;
+  transition: transform 0.1s;
+  outline: none;
+  box-shadow: 0 0 0 1px #3b414c;
 }
 
-.stepper-btn:first-of-type {
-  order: -1;
-  border-left: none;
-  border-right: 1px solid #3b414c;
+.swatch:hover {
+  transform: scale(1.15);
+  background: inherit;
 }
 
-.stepper-btn:hover {
-  background: #2c3038;
+.swatch.selected {
+  border-color: #f4f5fb;
+  box-shadow: 0 0 0 1px #f4f5fb;
+  transform: scale(1.15);
+}
+
+/* White swatch needs a border so it's visible on dark background */
+.swatch[data-color="#ffffff"] {
+  box-shadow: 0 0 0 1px #6b7280;
+}
+.swatch[data-color="#ffffff"].selected {
+  box-shadow: 0 0 0 2px #f4f5fb;
+}
+
+/* ── Auto-edit fields (shown after fetch) ────────────────── */
+#autoEditFields {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  color: #c8ced8;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+#autoEditFields[hidden] {
+  display: none;
 }

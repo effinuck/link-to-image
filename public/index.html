@@ -34,6 +34,7 @@
           <button class="tab" id="tabManual" role="tab" aria-selected="false" type="button">Manual</button>
         </div>
 
+        <!-- Auto panel -->
         <section class="mode-panel" id="autoPanel" role="tabpanel" aria-labelledby="tabAuto">
           <form class="url-form" id="urlForm">
             <label for="urlInput">Webpage Link</label>
@@ -42,8 +43,16 @@
               <button type="submit">GENERATE</button>
             </div>
           </form>
+          <!-- Editable fields shown after auto-fetch -->
+          <div id="autoEditFields" hidden>
+            <label for="autoSource">Source</label>
+            <input id="autoSource" type="text" placeholder="sitename.com">
+            <label for="autoTitle">Title</label>
+            <textarea id="autoTitle" rows="3" placeholder="Article title..."></textarea>
+          </div>
         </section>
 
+        <!-- Manual panel -->
         <section class="mode-panel" id="manualPanel" role="tabpanel" aria-labelledby="tabManual" hidden>
           <form class="url-form" id="manualForm">
             <label for="manualImageUpload">Image</label>
@@ -57,18 +66,63 @@
         </section>
 
         <div class="settings-grid">
-          <label>
+          <!-- Text Background — spans full row -->
+          <label class="span-full">
             Text Background
-            <input id="backgroundColor" type="color" value="#000000">
+            <div class="swatch-picker" data-target="backgroundColor">
+              <button type="button" class="swatch selected" data-color="#000000" style="background:#000000" title="Black"></button>
+              <button type="button" class="swatch" data-color="#ffffff" style="background:#ffffff" title="White"></button>
+              <button type="button" class="swatch" data-color="#FFCC00" style="background:#FFCC00" title="Saffron"></button>
+              <button type="button" class="swatch" data-color="#CC0000" style="background:#CC0000" title="Red"></button>
+              <button type="button" class="swatch" data-color="#0033CC" style="background:#0033CC" title="Royal Blue"></button>
+              <button type="button" class="swatch" data-color="#006600" style="background:#006600" title="Green"></button>
+              <button type="button" class="swatch" data-color="#470000" style="background:#470000" title="Maroon"></button>
+              <button type="button" class="swatch" data-color="#360088" style="background:#360088" title="Purple"></button>
+              <button type="button" class="swatch" data-color="#CC6600" style="background:#CC6600" title="Orange"></button>
+              <button type="button" class="swatch" data-color="#000066" style="background:#000066" title="Navy"></button>
+              <button type="button" class="swatch" data-color="#00C6FF" style="background:#00C6FF" title="Sky Blue"></button>
+            </div>
+            <input type="hidden" id="backgroundColor" value="#000000">
           </label>
+
+          <!-- Text Colour -->
           <label>
             Text Colour
-            <input id="textColor" type="color" value="#f4f5fb">
+            <div class="swatch-picker" data-target="textColor">
+              <button type="button" class="swatch" data-color="#000000" style="background:#000000" title="Black"></button>
+              <button type="button" class="swatch selected" data-color="#ffffff" style="background:#ffffff" title="White"></button>
+              <button type="button" class="swatch" data-color="#FFCC00" style="background:#FFCC00" title="Saffron"></button>
+              <button type="button" class="swatch" data-color="#CC0000" style="background:#CC0000" title="Red"></button>
+              <button type="button" class="swatch" data-color="#0033CC" style="background:#0033CC" title="Royal Blue"></button>
+              <button type="button" class="swatch" data-color="#006600" style="background:#006600" title="Green"></button>
+              <button type="button" class="swatch" data-color="#470000" style="background:#470000" title="Maroon"></button>
+              <button type="button" class="swatch" data-color="#360088" style="background:#360088" title="Purple"></button>
+              <button type="button" class="swatch" data-color="#CC6600" style="background:#CC6600" title="Orange"></button>
+              <button type="button" class="swatch" data-color="#000066" style="background:#000066" title="Navy"></button>
+              <button type="button" class="swatch" data-color="#00C6FF" style="background:#00C6FF" title="Sky Blue"></button>
+            </div>
+            <input type="hidden" id="textColor" value="#ffffff">
           </label>
+
+          <!-- Trim/Source Colour -->
           <label>
-            Trim/Source colour
-            <input id="trimColor" type="color" value="#f0d13a">
+            Trim/Source Colour
+            <div class="swatch-picker" data-target="trimColor">
+              <button type="button" class="swatch" data-color="#000000" style="background:#000000" title="Black"></button>
+              <button type="button" class="swatch" data-color="#ffffff" style="background:#ffffff" title="White"></button>
+              <button type="button" class="swatch selected" data-color="#FFCC00" style="background:#FFCC00" title="Saffron"></button>
+              <button type="button" class="swatch" data-color="#CC0000" style="background:#CC0000" title="Red"></button>
+              <button type="button" class="swatch" data-color="#0033CC" style="background:#0033CC" title="Royal Blue"></button>
+              <button type="button" class="swatch" data-color="#006600" style="background:#006600" title="Green"></button>
+              <button type="button" class="swatch" data-color="#470000" style="background:#470000" title="Maroon"></button>
+              <button type="button" class="swatch" data-color="#360088" style="background:#360088" title="Purple"></button>
+              <button type="button" class="swatch" data-color="#CC6600" style="background:#CC6600" title="Orange"></button>
+              <button type="button" class="swatch" data-color="#000066" style="background:#000066" title="Navy"></button>
+              <button type="button" class="swatch" data-color="#00C6FF" style="background:#00C6FF" title="Sky Blue"></button>
+            </div>
+            <input type="hidden" id="trimColor" value="#FFCC00">
           </label>
+
           <label class="span-full">
             Logo Image
             <input id="logoUpload" type="file" accept="image/png,image/svg+xml">
@@ -77,11 +131,13 @@
             Text Background Image
             <input id="bgImageUpload" type="file" accept="image/*">
           </label>
+
+          <!-- Title Size + Image Align last -->
           <label>
             Title Size
             <div class="stepper">
-              <input id="titleSize" type="number" min="40" max="92" step="1" value="58">
               <button type="button" class="stepper-btn" id="titleSizeMinus" aria-label="Decrease title size">−</button>
+              <input id="titleSize" type="number" min="40" max="92" step="1" value="58">
               <button type="button" class="stepper-btn" id="titleSizePlus" aria-label="Increase title size">+</button>
             </div>
           </label>

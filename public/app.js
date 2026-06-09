@@ -37,8 +37,8 @@ const defaultData = {
 const defaultControls = {
   titleSize: "58",
   background: "#000000",
-  text: "#f4f5fb",
-  trim: "#f0d13a"
+  text: "#ffffff",
+  trim: "#FFCC00"
 };
 
 let currentData = { ...defaultData };
@@ -322,12 +322,14 @@ manualForm.addEventListener("submit", async (event) => {
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   setStatus("Reading the page...");
+  hideAutoEditFields();
 
   try {
     const metadata = await fetchMetadata(urlInput.value);
     setStatus("Drawing the card...");
     await drawCard(metadata);
-    setStatus("Card ready.");
+    showAutoEditFields(metadata);
+    setStatus("Card ready — edit title or source above if needed.");
   } catch (error) {
     setStatus(error instanceof Error ? error.message : "Something went wrong.");
   }
@@ -338,10 +340,23 @@ resetButton.addEventListener("click", async () => {
   manualImageUpload.value = "";
   manualSource.value = "";
   manualTitle.value = "";
+  hideAutoEditFields();
   controls.titleSize.value = defaultControls.titleSize;
   controls.background.value = defaultControls.background;
   controls.text.value = defaultControls.text;
   controls.trim.value = defaultControls.trim;
+  // Reset swatch selections to defaults
+  document.querySelectorAll(".swatch-picker").forEach((picker) => {
+    const targetId = picker.dataset.target;
+    const defaultVal = defaultControls[
+      targetId === "backgroundColor" ? "background" :
+      targetId === "textColor" ? "text" :
+      targetId === "trimColor" ? "trim" : ""
+    ];
+    picker.querySelectorAll(".swatch").forEach(s => {
+      s.classList.toggle("selected", s.dataset.color.toLowerCase() === defaultVal?.toLowerCase());
+    });
+  });
   controls.logoUpload.value = "";
   controls.bgImageUpload.value = "";
   uploadedLogoSrc = "";
@@ -351,66 +366,120 @@ resetButton.addEventListener("click", async () => {
 });
 
 // ── Helpers ───────────────────────────────────────────────
-// ── DOWNLOAD IMAGE (desktop) / OPEN IMAGE (mobile) ───────
-const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+function isPwa() {
+  return window.matchMedia("(display-mode: standalone)").matches ||
+    window.navigator.standalone === true;
+}
 
-// Set button label based on device
-downloadButton.textContent = isMobile ? "🖼 OPEN IMAGE" : "⬇ DOWNLOAD IMAGE";
+async function getImageBlob() {
+  return new Promise((res, rej) =>
+    canvas.toBlob(b => b ? res(b) : rej(new Error("Could not generate image")), "image/png")
+  );
+}
 
-downloadButton.addEventListener("click", () => {
-  const dataUrl = canvas.toDataURL("image/png");
+// ── Save / Download button ────────────────────────────────
+downloadButton.addEventListener("click", async () => {
+  const filename = "link-preview-card.png";
 
-  if (isMobile) {
-    // Open PNG full-screen in a new tab — user can long-press → Save to Photos
-    const win = window.open("", "_blank");
-    if (win) {
-      win.document.write(
-        `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">` +
-        `<title>Link Preview Card</title>` +
-        `<style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { background: #111316; min-height: 100vh; display: flex; flex-direction: column; }
-          .toolbar { display: flex; align-items: center; justify-content: space-between;
-            padding: 12px 16px; background: #191c21; border-bottom: 1px solid #2c3038; flex-shrink: 0; }
-          .toolbar-hint { color: #a8afb9; font-family: system-ui, sans-serif; font-size: 13px; }
-          .close-btn { background: #f4f5fb; color: #08090b; border: none; border-radius: 6px;
-            padding: 8px 16px; font-family: system-ui, sans-serif; font-size: 13px;
-            font-weight: 700; cursor: pointer; }
-          .img-wrap { flex: 1; display: flex; align-items: flex-start; justify-content: center; padding: 16px; }
-          img { display: block; width: 100%; max-width: 600px; height: auto; border-radius: 8px; }
-        </style></head>` +
-        `<body>
-          <div class="toolbar">
-            <span class="toolbar-hint">Hold image → Save to Photos</span>
-            <button class="close-btn" onclick="window.close()">✕ Close</button>
-          </div>
-          <div class="img-wrap"><img src="${dataUrl}" alt="Link Preview Card"></div>
-        </body></html>`
-      );
-      win.document.close();
+  // When running as installed PWA on iOS, use Web Share API —
+  // this is the only path that surfaces "Save Image" in the share sheet
+  if (isPwa() && navigator.canShare) {
+    try {
+      const blob = await getImageBlob();
+      const file = new File([blob], filename, { type: "image/png" });
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: "Link Preview Card" });
+        return;
+      }
+    } catch (err) {
+      if (err.name === "AbortError") return; // user cancelled — do nothing
+      // fall through to regular download
     }
-  } else {
-    // Desktop: standard file download
-    const link = document.createElement("a");
-    link.download = "link-preview-card.png";
-    link.href = dataUrl;
-    link.click();
   }
+
+  // Desktop / non-PWA: standard anchor download
+  const dataUrl = canvas.toDataURL("image/png");
+  const link = document.createElement("a");
+  link.download = filename;
+  link.href = dataUrl;
+  link.click();
 });
 
-// ── Title size stepper buttons ────────────────────────────
-document.querySelector("#titleSizeMinus").addEventListener("click", () => {
-  const input = controls.titleSize;
-  const val = Math.max(Number(input.min), Number(input.value) - Number(input.step));
-  input.value = val;
-  input.dispatchEvent(new Event("input"));
+function triggerDownload() {
+  const dataUrl = canvas.toDataURL("image/png");
+  const link = document.createElement("a");
+  link.download = "link-preview-card.png";
+  link.href = dataUrl;
+  link.click();
+}
+
+// ── Share modal ───────────────────────────────────────────
+const shareButton      = document.querySelector("#shareButton");
+const shareOverlay     = document.querySelector("#shareOverlay");
+const shareClose       = document.querySelector("#shareClose");
+const sharePreviewImg  = document.querySelector("#sharePreviewImg");
+const shareDownloadBtn = document.querySelector("#shareDownloadBtn");
+
+function openShareModal() {
+  sharePreviewImg.src = canvas.toDataURL("image/png");
+  shareOverlay.hidden = false;
+  document.body.style.overflow = "hidden";
+}
+
+function closeShareModal() {
+  shareOverlay.hidden = true;
+  document.body.style.overflow = "";
+}
+
+shareButton.addEventListener("click", openShareModal);
+shareClose.addEventListener("click", closeShareModal);
+shareDownloadBtn.addEventListener("click", () => { triggerDownload(); closeShareModal(); });
+
+// Close on backdrop click
+shareOverlay.addEventListener("click", (e) => {
+  if (e.target === shareOverlay) closeShareModal();
 });
 
-document.querySelector("#titleSizePlus").addEventListener("click", () => {
-  const input = controls.titleSize;
-  const val = Math.min(Number(input.max), Number(input.value) + Number(input.step));
-  input.value = val;
-  input.dispatchEvent(new Event("input"));
+// ── Swatch colour pickers ─────────────────────────────────
+document.querySelectorAll(".swatch-picker").forEach((picker) => {
+  const targetId = picker.dataset.target;
+  const hiddenInput = document.querySelector(`#${targetId}`);
+
+  picker.querySelectorAll(".swatch").forEach((swatch) => {
+    swatch.addEventListener("click", () => {
+      picker.querySelectorAll(".swatch").forEach(s => s.classList.remove("selected"));
+      swatch.classList.add("selected");
+      hiddenInput.value = swatch.dataset.color;
+      hiddenInput.dispatchEvent(new Event("input"));
+    });
+  });
+});
+
+// ── Editable fields shown after auto-fetch ────────────────
+const autoEditFields = document.querySelector("#autoEditFields");
+const autoSource     = document.querySelector("#autoSource");
+const autoTitle      = document.querySelector("#autoTitle");
+
+function showAutoEditFields(data) {
+  autoSource.value = data.displayUrl || "";
+  autoTitle.value  = data.title || "";
+  autoEditFields.hidden = false;
+}
+
+function hideAutoEditFields() {
+  autoEditFields.hidden = true;
+  autoSource.value = "";
+  autoTitle.value  = "";
+}
+
+autoSource.addEventListener("input", () => {
+  currentData = { ...currentData, displayUrl: autoSource.value };
+  drawCard(currentData);
+});
+
+autoTitle.addEventListener("input", () => {
+  currentData = { ...currentData, title: autoTitle.value };
+  drawCard(currentData);
 });
 
 for (const control of [controls.titleSize, controls.background, controls.text, controls.trim, controls.imageAlign]) {
