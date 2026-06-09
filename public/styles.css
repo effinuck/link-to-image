@@ -22,7 +22,7 @@ input {
 
 .app-shell {
   display: grid;
-  grid-template-columns: minmax(320px, 420px) minmax(360px, 1fr);
+  grid-template-columns: minmax(380px, 520px) minmax(360px, 1fr);
   gap: 28px;
   min-height: 100vh;
   padding: 28px;
@@ -249,8 +249,9 @@ canvas {
     flex-direction: column;
   }
 
+  /* Keep 2-col on mobile — title size + image align share a row */
   .settings-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
   }
 }
 
@@ -318,14 +319,17 @@ canvas {
 /* ── Swatch colour picker ────────────────────────────────── */
 .swatch-picker {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  flex-wrap: nowrap;
+  gap: 5px;
   margin-top: 4px;
+  overflow-x: auto;
+  padding-bottom: 2px;
 }
 
 .swatch {
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
   min-height: unset;
   border-radius: 50%;
   border: 2px solid transparent;
