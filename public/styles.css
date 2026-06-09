@@ -320,10 +320,8 @@ canvas {
 .swatch-picker {
   display: flex;
   flex-wrap: nowrap;
+  justify-content: space-between;
   gap: 5px;
-  margin-top: 4px;
-  overflow-x: auto;
-  padding-bottom: 2px;
 }
 
 .swatch {
