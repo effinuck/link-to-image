@@ -1,52 +1,51 @@
-const form = document.querySelector("#urlForm");
-const urlInput = document.querySelector("#urlInput");
-const manualForm = document.querySelector("#manualForm");
-const manualImageUpload = document.querySelector("#manualImageUpload");
-const manualSource = document.querySelector("#manualSource");
-const manualTitle = document.querySelector("#manualTitle");
-const tabAuto = document.querySelector("#tabAuto");
-const tabManual = document.querySelector("#tabManual");
-const autoPanel = document.querySelector("#autoPanel");
-const manualPanel = document.querySelector("#manualPanel");
-const resetButton = document.querySelector("#resetButton");
-const downloadButton = document.querySelector("#downloadButton");
-const statusEl = document.querySelector("#status");
-const canvas = document.querySelector("#previewCanvas");
-const ctx = canvas.getContext("2d");
-const fontStack = "Poppins, Arial, sans-serif";
+const form               = document.querySelector("#urlForm");
+const urlInput           = document.querySelector("#urlInput");
+const manualForm         = document.querySelector("#manualForm");
+const manualImageUpload  = document.querySelector("#manualImageUpload");
+const manualSource       = document.querySelector("#manualSource");
+const manualTitle        = document.querySelector("#manualTitle");
+const tabAuto            = document.querySelector("#tabAuto");
+const tabManual          = document.querySelector("#tabManual");
+const autoPanel          = document.querySelector("#autoPanel");
+const manualPanel        = document.querySelector("#manualPanel");
+const resetButton        = document.querySelector("#resetButton");
+const downloadButton     = document.querySelector("#downloadButton");
+const statusEl           = document.querySelector("#status");
+const canvas             = document.querySelector("#previewCanvas");
+const ctx                = canvas.getContext("2d");
+const fontStack          = "Poppins, Arial, sans-serif";
 
 const controls = {
-  titleSize: document.querySelector("#titleSize"),
-  imageAlign: document.querySelector("#imageAlign"),
-  background: document.querySelector("#backgroundColor"),
-  text: document.querySelector("#textColor"),
-  trim: document.querySelector("#trimColor"),
-  logoUpload: document.querySelector("#logoUpload"),
-  bgImageUpload: document.querySelector("#bgImageUpload")
+  titleSize:    document.querySelector("#titleSize"),
+  imageAlign:   document.querySelector("#imageAlign"),
+  background:   document.querySelector("#backgroundColor"),
+  text:         document.querySelector("#textColor"),
+  trim:         document.querySelector("#trimColor"),
+  logoUpload:   document.querySelector("#logoUpload"),
+  bgImageUpload:document.querySelector("#bgImageUpload")
 };
 
-let uploadedLogoSrc = "";
+let uploadedLogoSrc    = "";
 let uploadedBgImageSrc = "";
 
 const defaultData = {
   displayUrl: "sitename.com",
   title: "Title of the webpage or article will appear here",
-  image: "https://images.unsplash.com/photo-1558637845-c8b7ead71a3e?q=80&w=1632&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+  image: "https://images.unsplash.com/photo-1558637845-c8b7ead71a3e?q=80&w=1632&auto=format&fit=crop"
 };
 
 const defaultControls = {
-  titleSize: "58",
+  titleSize:  "58",
   background: "#000000",
-  text: "#ffffff",
-  trim: "#FFCC00"
+  text:       "#ffffff",
+  trim:       "#FFCC00"
 };
 
 let currentData = { ...defaultData };
 
-function setStatus(message) {
-  statusEl.textContent = message;
-}
+function setStatus(message) { statusEl.textContent = message; }
 
+// ── Text helpers ──────────────────────────────────────────
 function fitText(ctx, text, maxWidth, baseSize, minSize) {
   let size = baseSize;
   ctx.font = `700 ${size}px ${fontStack}`;
@@ -61,71 +60,31 @@ function wrapText(ctx, text, maxWidth, baseSize, minSize) {
   const words = text.split(/\s+/).filter(Boolean);
   const lines = [];
   let line = "";
-  let size = baseSize;
+  let size  = baseSize;
 
   for (const word of words) {
     const testLine = line ? `${line} ${word}` : word;
     ctx.font = `700 ${size}px ${fontStack}`;
-
     if (ctx.measureText(testLine).width <= maxWidth) {
       line = testLine;
       continue;
     }
-
     if (line) lines.push(line);
-
     if (ctx.measureText(word).width > maxWidth) {
       size = fitText(ctx, word, maxWidth, size, minSize);
     }
-
     line = word;
   }
-
   if (line) lines.push(line);
   return { lines, size };
 }
 
-function drawCoverImage(image, x, y, width, height) {
-  const sourceRatio = image.naturalWidth / image.naturalHeight;
-  const targetRatio = width / height;
-  let sx = 0;
-  let sy = 0;
-  let sw = image.naturalWidth;
-  let sh = image.naturalHeight;
-
-  if (sourceRatio > targetRatio) {
-    // Image is wider than target: crop sides equally (centre crop)
-    sw = image.naturalHeight * targetRatio;
-    sx = (image.naturalWidth - sw) / 2;
-  } else {
-    // Image is taller than target: crop from bottom only (keep top)
-    sh = image.naturalWidth / targetRatio;
-    sy = 0;
-  }
-
-  ctx.drawImage(image, sx, sy, sw, sh, x, y, width, height);
-}
-
-function drawContainedImage(image, x, y, width, height) {
-  const sourceRatio = image.naturalWidth / image.naturalHeight;
-  const targetRatio = width / height;
-  let drawWidth = width;
-  let drawHeight = height;
-
-  if (sourceRatio > targetRatio) {
-    drawHeight = width / sourceRatio;
-  } else {
-    drawWidth = height * sourceRatio;
-  }
-
-  ctx.drawImage(image, x + (width - drawWidth) / 2, y + (height - drawHeight) / 2, drawWidth, drawHeight);
-}
-
+// ── Image helpers ─────────────────────────────────────────
 function loadImage(src) {
   return new Promise((resolve, reject) => {
     const image = new Image();
     image.crossOrigin = "anonymous";
-    image.onload = () => resolve(image);
+    image.onload  = () => resolve(image);
     image.onerror = reject;
     image.src = src;
   });
@@ -133,16 +92,19 @@ function loadImage(src) {
 
 function proxiedImageUrl(src) {
   if (!src) return "";
-  if (src.startsWith("data:") || src.startsWith("/") || src.startsWith(location.origin)) return src;
+  if (src.startsWith("data:") || src.startsWith(location.origin)) return src;
   return `/api/image?url=${encodeURIComponent(src)}`;
 }
 
 async function drawLogo(data, x, y, size) {
   if (!uploadedLogoSrc) return false;
-
   try {
     const logo = await loadImage(uploadedLogoSrc);
-    drawContainedImage(logo, x, y, size, size);
+    const sr   = logo.naturalWidth / logo.naturalHeight;
+    const tr   = size / size;
+    let dw = size, dh = size;
+    if (sr > tr) { dh = size / sr; } else { dw = size * sr; }
+    ctx.drawImage(logo, x, y + (size - dh) / 2, dw, dh);
     return true;
   } catch {
     uploadedLogoSrc = "";
@@ -153,61 +115,52 @@ async function drawLogo(data, x, y, size) {
 function decodeHtmlEntities(str) {
   return str
     .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
-    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(Number(dec)))
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&apos;/g, "'")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&ndash;/g, "–")
-    .replace(/&mdash;/g, "—")
-    .replace(/&lsquo;/g, "\u2018")
-    .replace(/&rsquo;/g, "\u2019")
-    .replace(/&ldquo;/g, "\u201C")
-    .replace(/&rdquo;/g, "\u201D");
+    .replace(/&#(\d+);/g,            (_, dec) => String.fromCharCode(Number(dec)))
+    .replace(/&amp;/g,  "&").replace(/&lt;/g,   "<").replace(/&gt;/g,    ">")
+    .replace(/&quot;/g, '"').replace(/&#39;/g,   "'").replace(/&apos;/g,  "'")
+    .replace(/&nbsp;/g, " ").replace(/&ndash;/g, "–").replace(/&mdash;/g, "—")
+    .replace(/&lsquo;/g,"\u2018").replace(/&rsquo;/g,"\u2019")
+    .replace(/&ldquo;/g,"\u201C").replace(/&rdquo;/g,"\u201D");
 }
 
+// ── Draw card ─────────────────────────────────────────────
 async function drawCard(data = currentData) {
   currentData = data;
 
-  const width = 900;
-  const totalHeight = Math.round(width * 5 / 4); // overall card is 4:5
-  const imageHeight = Math.round(totalHeight / 2); // top photo fills exactly half the card
-  const trimHeight = Math.max(7, Math.round(width * 0.014));
-  const padding = Math.round(width * 0.062);
-  const gap = Math.round(width * 0.042);
+  const width       = 900;
+  const totalHeight = Math.round(width * 5 / 4);
+  const imageHeight = Math.round(totalHeight / 2);
+  const trimHeight  = Math.max(7, Math.round(width * 0.014));
+  const padding     = Math.round(width * 0.062);
+  const gap         = Math.round(width * 0.042);
   const lowerHeight = totalHeight - imageHeight - trimHeight;
 
-  const titleBase = Number(controls.titleSize.value) || Math.round(width * 0.069);
-  const titleMaxWidth = width - padding * 2;
-  const rawTitle = decodeHtmlEntities(data.title || "Untitled page");
-  const logoSize = Math.round(width * 0.059);
-  const labelSize = Math.round(width * 0.043);
+  const titleBase    = Number(controls.titleSize.value) || Math.round(width * 0.069);
+  const titleMaxWidth= width - padding * 2;
+  const rawTitle     = decodeHtmlEntities(data.title || "Untitled page");
+  const logoSize     = Math.round(width * 0.059);
+  const labelSize    = Math.round(width * 0.043);
   const sourceRowHeight = uploadedLogoSrc ? logoSize : labelSize;
 
-  canvas.width = width;
+  canvas.width  = width;
   canvas.height = totalHeight;
 
   ctx.fillStyle = controls.background.value;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+  // ── Featured image
   try {
-    const image = await loadImage(proxiedImageUrl(data.image));
-    const scale = imageHeight / image.naturalHeight;
-    const drawW = image.naturalWidth * scale;
-    const drawH = imageHeight;
-
+    const image  = await loadImage(proxiedImageUrl(data.image));
+    const scale  = imageHeight / image.naturalHeight;
+    const drawW  = image.naturalWidth * scale;
+    const drawH  = imageHeight;
     if (drawW >= width) {
-      // Image is wide enough to fill — fit to height, crop left/right per alignment
       const align = controls.imageAlign.value;
       const drawX = align === "left" ? 0 : align === "right" ? width - drawW : (width - drawW) / 2;
       ctx.drawImage(image, drawX, 0, drawW, drawH);
     } else {
-      // Image is too narrow — fit to width instead, crop top/bottom from top
       const scaleW = width / image.naturalWidth;
-      const fitH = image.naturalHeight * scaleW;
+      const fitH   = image.naturalHeight * scaleW;
       ctx.drawImage(image, 0, 0, width, fitH);
     }
   } catch {
@@ -218,21 +171,19 @@ async function drawCard(data = currentData) {
     ctx.fillText("No featured image found", padding, imageHeight / 2);
   }
 
+  // ── Trim bar
   ctx.fillStyle = controls.trim.value;
   ctx.fillRect(0, imageHeight, width, trimHeight);
 
   const bodyTop = imageHeight + trimHeight;
 
-  // Draw background image behind text area if uploaded
+  // ── Text background / bg image
   if (uploadedBgImageSrc) {
     try {
       const bgImage = await loadImage(uploadedBgImageSrc);
-      // Scale to fill height, maintain aspect ratio, align to right edge
-      const scale = lowerHeight / bgImage.naturalHeight;
-      const drawW = bgImage.naturalWidth * scale;
-      const drawH = lowerHeight;
-      const drawX = width - drawW; // right-aligned
-      ctx.drawImage(bgImage, drawX, bodyTop, drawW, drawH);
+      const scale   = lowerHeight / bgImage.naturalHeight;
+      const drawW   = bgImage.naturalWidth * scale;
+      ctx.drawImage(bgImage, width - drawW, bodyTop, drawW, lowerHeight);
     } catch {
       ctx.fillStyle = controls.background.value;
       ctx.fillRect(0, bodyTop, width, lowerHeight);
@@ -242,69 +193,66 @@ async function drawCard(data = currentData) {
     ctx.fillRect(0, bodyTop, width, lowerHeight);
   }
 
-  const displayUrl = data.displayUrl || "";
-  const sourceTop = bodyTop + gap;
-  const hasLogo = await drawLogo(data, padding, sourceTop, logoSize);
-  const sourceX = hasLogo ? padding + logoSize + Math.round(width * 0.022) : padding;
-  const sourceBaseline = hasLogo
-    ? sourceTop + Math.round(logoSize * 0.72)
-    : sourceTop + labelSize;
+  // ── Source / logo row
+  const displayUrl  = data.displayUrl || "";
+  const sourceTop   = bodyTop + gap;
+  const hasLogo     = await drawLogo(data, padding, sourceTop, logoSize);
+  const sourceX     = hasLogo ? padding + logoSize + Math.round(width * 0.022) : padding;
+  const sourceBaseline = hasLogo ? sourceTop + Math.round(logoSize * 0.72) : sourceTop + labelSize;
 
-  ctx.font = `400 ${labelSize}px ${fontStack}`;
+  ctx.font      = `400 ${labelSize}px ${fontStack}`;
   ctx.fillStyle = controls.trim.value;
   ctx.fillText(displayUrl, sourceX, sourceBaseline);
 
-  const titleTop = sourceTop + sourceRowHeight + gap;
-  const titleAreaBottom = bodyTop + lowerHeight - padding;
-
-  // Measure and wrap title within fixed panel
-  const { lines, size } = wrapText(ctx, rawTitle, titleMaxWidth, titleBase, 20);
-  const lineHeight = Math.round(size * 1.2);
-
-  // Only draw lines that fit within the fixed text panel
-  const maxLines = Math.max(1, Math.floor((titleAreaBottom - titleTop) / lineHeight));
-  const visibleLines = lines.slice(0, maxLines);
-  const isClipped = lines.length > visibleLines.length;
+  // ── Title
+  const titleTop         = sourceTop + sourceRowHeight + gap;
+  const titleAreaBottom  = bodyTop + lowerHeight - padding;
+  const { lines, size }  = wrapText(ctx, rawTitle, titleMaxWidth, titleBase, 20);
+  const lineHeight       = Math.round(size * 1.2);
+  const maxLines         = Math.max(1, Math.floor((titleAreaBottom - titleTop) / lineHeight));
+  const visibleLines     = lines.slice(0, maxLines);
 
   ctx.fillStyle = controls.text.value;
-  ctx.font = `700 ${size}px ${fontStack}`;
+  ctx.font      = `700 ${size}px ${fontStack}`;
   let y = titleTop + size;
   for (const line of visibleLines) {
     ctx.fillText(line, padding, y);
     y += lineHeight;
   }
 
-  if (isClipped) {
+  if (lines.length > visibleLines.length) {
     setStatus("⚠️ Title is cropped — reduce the font size to fit.");
   }
 }
 
+// ── API ───────────────────────────────────────────────────
 async function fetchMetadata(url) {
   const response = await fetch(`/api/metadata?url=${encodeURIComponent(url)}`);
-  const body = await response.json();
+  const body     = await response.json();
   if (!response.ok) throw new Error(body.error || "Could not generate the preview.");
   return body;
 }
 
+// ── Tabs ──────────────────────────────────────────────────
 function setMode(mode) {
   const isManual = mode === "manual";
   tabAuto.classList.toggle("active", !isManual);
   tabAuto.setAttribute("aria-selected", String(!isManual));
   tabManual.classList.toggle("active", isManual);
   tabManual.setAttribute("aria-selected", String(isManual));
-  autoPanel.hidden = isManual;
+  autoPanel.hidden  = isManual;
   manualPanel.hidden = !isManual;
 }
 
-tabAuto.addEventListener("click", () => setMode("auto"));
+tabAuto.addEventListener("click",   () => setMode("auto"));
 tabManual.addEventListener("click", () => setMode("manual"));
 
-// Manual form submit
+// ── Manual form ───────────────────────────────────────────
 manualForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const source = manualSource.value.trim() || "source.com";
-  const title = manualTitle.value.trim() || "Untitled";
-  const file = manualImageUpload.files?.[0];
+  const title  = manualTitle.value.trim()  || "Untitled";
+  const file   = manualImageUpload.files?.[0];
 
   const getImageSrc = () => new Promise((resolve) => {
     if (!file) { resolve(defaultData.image); return; }
@@ -319,6 +267,7 @@ manualForm.addEventListener("submit", async (event) => {
   setStatus("Card ready.");
 });
 
+// ── Auto form ─────────────────────────────────────────────
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   setStatus("Reading the page...");
@@ -335,116 +284,39 @@ form.addEventListener("submit", async (event) => {
   }
 });
 
+// ── Reset ─────────────────────────────────────────────────
 resetButton.addEventListener("click", async () => {
   urlInput.value = "";
   manualImageUpload.value = "";
   manualSource.value = "";
-  manualTitle.value = "";
+  manualTitle.value  = "";
   hideAutoEditFields();
   controls.titleSize.value = defaultControls.titleSize;
-  controls.background.value = defaultControls.background;
-  controls.text.value = defaultControls.text;
-  controls.trim.value = defaultControls.trim;
-  // Reset swatch selections to defaults
-  document.querySelectorAll(".swatch-picker").forEach((picker) => {
-    const targetId = picker.dataset.target;
-    const defaultVal = defaultControls[
-      targetId === "backgroundColor" ? "background" :
-      targetId === "textColor" ? "text" :
-      targetId === "trimColor" ? "trim" : ""
-    ];
-    picker.querySelectorAll(".swatch").forEach(s => {
-      s.classList.toggle("selected", s.dataset.color.toLowerCase() === defaultVal?.toLowerCase());
-    });
+  // Reset swatch selections
+  [
+    ["backgroundColor", defaultControls.background],
+    ["textColor",       defaultControls.text],
+    ["trimColor",       defaultControls.trim],
+  ].forEach(([id, val]) => {
+    const picker = document.querySelector(`.swatch-picker[data-target="${id}"]`);
+    picker?.querySelectorAll(".swatch").forEach(s =>
+      s.classList.toggle("selected", s.dataset.color.toLowerCase() === val.toLowerCase())
+    );
+    const hidden = document.querySelector(`#${id}`);
+    if (hidden) hidden.value = val;
   });
-  controls.logoUpload.value = "";
+  controls.logoUpload.value    = "";
   controls.bgImageUpload.value = "";
-  uploadedLogoSrc = "";
+  uploadedLogoSrc    = "";
   uploadedBgImageSrc = "";
   await drawCard({ ...defaultData });
   setStatus("Reset.");
 });
 
-// ── Helpers ───────────────────────────────────────────────
-function isPwa() {
-  return window.matchMedia("(display-mode: standalone)").matches ||
-    window.navigator.standalone === true;
-}
-
-async function getImageBlob() {
-  return new Promise((res, rej) =>
-    canvas.toBlob(b => b ? res(b) : rej(new Error("Could not generate image")), "image/png")
-  );
-}
-
-// ── Save / Download button ────────────────────────────────
-downloadButton.addEventListener("click", async () => {
-  const filename = "link-preview-card.png";
-
-  // When running as installed PWA on iOS, use Web Share API —
-  // this is the only path that surfaces "Save Image" in the share sheet
-  if (isPwa() && navigator.canShare) {
-    try {
-      const blob = await getImageBlob();
-      const file = new File([blob], filename, { type: "image/png" });
-      if (navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: "Link Preview Card" });
-        return;
-      }
-    } catch (err) {
-      if (err.name === "AbortError") return; // user cancelled — do nothing
-      // fall through to regular download
-    }
-  }
-
-  // Desktop / non-PWA: standard anchor download
-  const dataUrl = canvas.toDataURL("image/png");
-  const link = document.createElement("a");
-  link.download = filename;
-  link.href = dataUrl;
-  link.click();
-});
-
-function triggerDownload() {
-  const dataUrl = canvas.toDataURL("image/png");
-  const link = document.createElement("a");
-  link.download = "link-preview-card.png";
-  link.href = dataUrl;
-  link.click();
-}
-
-// ── Share modal ───────────────────────────────────────────
-const shareButton      = document.querySelector("#shareButton");
-const shareOverlay     = document.querySelector("#shareOverlay");
-const shareClose       = document.querySelector("#shareClose");
-const sharePreviewImg  = document.querySelector("#sharePreviewImg");
-const shareDownloadBtn = document.querySelector("#shareDownloadBtn");
-
-function openShareModal() {
-  sharePreviewImg.src = canvas.toDataURL("image/png");
-  shareOverlay.hidden = false;
-  document.body.style.overflow = "hidden";
-}
-
-function closeShareModal() {
-  shareOverlay.hidden = true;
-  document.body.style.overflow = "";
-}
-
-shareButton.addEventListener("click", openShareModal);
-shareClose.addEventListener("click", closeShareModal);
-shareDownloadBtn.addEventListener("click", () => { triggerDownload(); closeShareModal(); });
-
-// Close on backdrop click
-shareOverlay.addEventListener("click", (e) => {
-  if (e.target === shareOverlay) closeShareModal();
-});
-
-// ── Swatch colour pickers ─────────────────────────────────
+// ── Swatch pickers ────────────────────────────────────────
 document.querySelectorAll(".swatch-picker").forEach((picker) => {
-  const targetId = picker.dataset.target;
+  const targetId    = picker.dataset.target;
   const hiddenInput = document.querySelector(`#${targetId}`);
-
   picker.querySelectorAll(".swatch").forEach((swatch) => {
     swatch.addEventListener("click", () => {
       picker.querySelectorAll(".swatch").forEach(s => s.classList.remove("selected"));
@@ -455,17 +327,16 @@ document.querySelectorAll(".swatch-picker").forEach((picker) => {
   });
 });
 
-// ── Editable fields shown after auto-fetch ────────────────
+// ── Editable auto fields ──────────────────────────────────
 const autoEditFields = document.querySelector("#autoEditFields");
 const autoSource     = document.querySelector("#autoSource");
 const autoTitle      = document.querySelector("#autoTitle");
 
 function showAutoEditFields(data) {
   autoSource.value = data.displayUrl || "";
-  autoTitle.value  = data.title || "";
+  autoTitle.value  = data.title      || "";
   autoEditFields.hidden = false;
 }
-
 function hideAutoEditFields() {
   autoEditFields.hidden = true;
   autoSource.value = "";
@@ -476,30 +347,25 @@ autoSource.addEventListener("input", () => {
   currentData = { ...currentData, displayUrl: autoSource.value };
   drawCard(currentData);
 });
-
 autoTitle.addEventListener("input", () => {
   currentData = { ...currentData, title: autoTitle.value };
   drawCard(currentData);
 });
 
+// ── Control listeners ─────────────────────────────────────
 for (const control of [controls.titleSize, controls.background, controls.text, controls.trim, controls.imageAlign]) {
   control.addEventListener("input", () => drawCard(currentData));
 }
 
+// ── Logo upload ───────────────────────────────────────────
 controls.logoUpload.addEventListener("change", () => {
   const file = controls.logoUpload.files?.[0];
-  if (!file) {
-    uploadedLogoSrc = "";
-    drawCard(currentData);
-    return;
-  }
-
+  if (!file) { uploadedLogoSrc = ""; drawCard(currentData); return; }
   if (file.type !== "image/png" && file.type !== "image/svg+xml") {
     controls.logoUpload.value = "";
     setStatus("Please upload a PNG or SVG logo.");
     return;
   }
-
   const reader = new FileReader();
   reader.addEventListener("load", async () => {
     uploadedLogoSrc = typeof reader.result === "string" ? reader.result : "";
@@ -509,14 +375,10 @@ controls.logoUpload.addEventListener("change", () => {
   reader.readAsDataURL(file);
 });
 
+// ── Background image upload ───────────────────────────────
 controls.bgImageUpload.addEventListener("change", () => {
   const file = controls.bgImageUpload.files?.[0];
-  if (!file) {
-    uploadedBgImageSrc = "";
-    drawCard(currentData);
-    return;
-  }
-
+  if (!file) { uploadedBgImageSrc = ""; drawCard(currentData); return; }
   const reader = new FileReader();
   reader.addEventListener("load", async () => {
     uploadedBgImageSrc = typeof reader.result === "string" ? reader.result : "";
@@ -526,4 +388,58 @@ controls.bgImageUpload.addEventListener("change", () => {
   reader.readAsDataURL(file);
 });
 
+// ── Title size stepper ────────────────────────────────────
+document.querySelector("#titleSizeMinus").addEventListener("click", () => {
+  const input = controls.titleSize;
+  input.value = Math.max(Number(input.min), Number(input.value) - Number(input.step));
+  input.dispatchEvent(new Event("input"));
+});
+document.querySelector("#titleSizePlus").addEventListener("click", () => {
+  const input = controls.titleSize;
+  input.value = Math.min(Number(input.max), Number(input.value) + Number(input.step));
+  input.dispatchEvent(new Event("input"));
+});
+
+// ── Download / Open Image ─────────────────────────────────
+const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+downloadButton.textContent = isMobile ? "🖼 OPEN IMAGE" : "⬇ DOWNLOAD IMAGE";
+
+downloadButton.addEventListener("click", () => {
+  const dataUrl = canvas.toDataURL("image/png");
+  if (isMobile) {
+    const win = window.open("", "_blank");
+    if (win) {
+      win.document.write(
+        `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">` +
+        `<title>Link Preview Card</title>` +
+        `<style>
+          * { margin:0; padding:0; box-sizing:border-box; }
+          body { background:#111316; min-height:100vh; display:flex; flex-direction:column; }
+          .toolbar { display:flex; align-items:center; justify-content:space-between;
+            padding:12px 16px; background:#191c21; border-bottom:1px solid #2c3038; flex-shrink:0; }
+          .toolbar-hint { color:#a8afb9; font-family:system-ui,sans-serif; font-size:13px; }
+          .close-btn { background:#f4f5fb; color:#08090b; border:none; border-radius:6px;
+            padding:8px 16px; font-family:system-ui,sans-serif; font-size:13px; font-weight:700; cursor:pointer; }
+          .img-wrap { flex:1; display:flex; align-items:flex-start; justify-content:center; padding:16px; }
+          img { display:block; width:100%; max-width:600px; height:auto; border-radius:8px; }
+        </style></head>` +
+        `<body>
+          <div class="toolbar">
+            <span class="toolbar-hint">Hold image → Save to Photos</span>
+            <button class="close-btn" onclick="window.close()">✕ Close</button>
+          </div>
+          <div class="img-wrap"><img src="${dataUrl}" alt="Link Preview Card"></div>
+        </body></html>`
+      );
+      win.document.close();
+    }
+  } else {
+    const link = document.createElement("a");
+    link.download = "link-preview-card.png";
+    link.href = dataUrl;
+    link.click();
+  }
+});
+
+// ── Initial draw ──────────────────────────────────────────
 document.fonts?.ready.then(() => drawCard()) || drawCard();
