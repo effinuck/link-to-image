@@ -248,6 +248,11 @@ canvas {
   .header-row {
     flex-direction: column;
   }
+.swatch {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+}
 
   /* Keep 2-col on mobile — title size + image align share a row */
   .settings-grid {
@@ -325,11 +330,10 @@ canvas {
 }
 
 .swatch {
-  width: 26px;
-  height: 26px;
-  min-width: 26px;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
   min-height: unset;
-  border-radius: 50%;
   border: 2px solid transparent;
   padding: 0;
   cursor: pointer;
