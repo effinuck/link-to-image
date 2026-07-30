@@ -24,7 +24,7 @@ const controls = {
   logoUpload:   document.querySelector("#logoUpload"),
   bgImageUpload:document.querySelector("#bgImageUpload"),
   titleFont:    document.querySelector("#titleFont"),
-  sourceFont:   document.querySelector("#sourceFont"),
+  titleUppercase: document.querySelector("#titleUppercase"),
 };
 
 let uploadedLogoSrc    = "";
@@ -42,7 +42,6 @@ const defaultControls = {
   text:       "#ffffff",
   trim:       "#FFCC00",
   titleFont:  "Poppins, Arial, sans-serif",
-  sourceFont: "Poppins, Arial, sans-serif",
 };
 
 let currentData = { ...defaultData };
@@ -198,8 +197,7 @@ async function drawCard(data = currentData) {
   }
 
   // ── Source / logo row
-  const activeTitleFont  = controls.titleFont?.value  || fontStack;
-  const activeSourceFont = controls.sourceFont?.value || fontStack;
+  const activeTitleFont  = controls.titleFont?.value || fontStack;
 
   // Anton and Anton SC are single-weight display fonts — don't synthesise bold
   const titleWeight = /Anton/.test(activeTitleFont) ? "400" : "700";
@@ -211,14 +209,16 @@ async function drawCard(data = currentData) {
   // Source line-height: 1 (single line, baseline is top + labelSize)
   const sourceBaseline = hasLogo ? sourceTop + Math.round(logoSize * 0.72) : sourceTop + labelSize;
 
-  ctx.font      = `400 ${labelSize}px ${activeSourceFont}`;
+  ctx.font      = `400 ${labelSize}px ${fontStack}`;
   ctx.fillStyle = controls.trim.value;
   ctx.fillText(displayUrl, sourceX, sourceBaseline);
 
   // ── Title (line-height: 1.2)
+  const isUppercase = controls.titleUppercase?.checked ?? false;
+  const rawTitleFinal = isUppercase ? rawTitle.toUpperCase() : rawTitle;
   const titleTop         = sourceTop + sourceRowHeight + gap;
   const titleAreaBottom  = bodyTop + lowerHeight - padding;
-  const { lines, size }  = wrapText(ctx, rawTitle, titleMaxWidth, titleBase, 20, activeTitleFont, titleWeight);
+  const { lines, size }  = wrapText(ctx, rawTitleFinal, titleMaxWidth, titleBase, 20, activeTitleFont, titleWeight);
   const lineHeight       = Math.round(size * 1.2);
   const maxLines         = Math.max(1, Math.floor((titleAreaBottom - titleTop) / lineHeight));
   const visibleLines     = lines.slice(0, maxLines);
@@ -303,8 +303,8 @@ resetButton.addEventListener("click", async () => {
   manualTitle.value  = "";
   hideAutoEditFields();
   controls.titleSize.value  = defaultControls.titleSize;
-  if (controls.titleFont)  controls.titleFont.value  = defaultControls.titleFont;
-  if (controls.sourceFont) controls.sourceFont.value = defaultControls.sourceFont;
+  if (controls.titleFont)    controls.titleFont.value    = defaultControls.titleFont;
+  if (controls.titleUppercase) controls.titleUppercase.checked = false;
   // Reset swatch selections
   [
     ["backgroundColor", defaultControls.background],
@@ -366,9 +366,10 @@ autoTitle.addEventListener("input", () => {
 });
 
 // ── Control listeners ─────────────────────────────────────
-for (const control of [controls.titleSize, controls.background, controls.text, controls.trim, controls.imageAlign, controls.titleFont, controls.sourceFont]) {
+for (const control of [controls.titleSize, controls.background, controls.text, controls.trim, controls.imageAlign, controls.titleFont]) {
   control.addEventListener("input", () => drawCard(currentData));
 }
+controls.titleUppercase.addEventListener("change", () => drawCard(currentData));
 
 // ── Logo upload ───────────────────────────────────────────
 controls.logoUpload.addEventListener("change", () => {
