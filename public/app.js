@@ -22,7 +22,9 @@ const controls = {
   text:         document.querySelector("#textColor"),
   trim:         document.querySelector("#trimColor"),
   logoUpload:   document.querySelector("#logoUpload"),
-  bgImageUpload:document.querySelector("#bgImageUpload")
+  bgImageUpload:document.querySelector("#bgImageUpload"),
+  titleFont:    document.querySelector("#titleFont"),
+  sourceFont:   document.querySelector("#sourceFont"),
 };
 
 let uploadedLogoSrc    = "";
@@ -38,7 +40,9 @@ const defaultControls = {
   titleSize:  "58",
   background: "#000000",
   text:       "#ffffff",
-  trim:       "#FFCC00"
+  trim:       "#FFCC00",
+  titleFont:  "Poppins, Arial, sans-serif",
+  sourceFont: "Poppins, Arial, sans-serif",
 };
 
 let currentData = { ...defaultData };
@@ -46,17 +50,17 @@ let currentData = { ...defaultData };
 function setStatus(message) { statusEl.textContent = message; }
 
 // ── Text helpers ──────────────────────────────────────────
-function fitText(ctx, text, maxWidth, baseSize, minSize) {
+function fitText(ctx, text, maxWidth, baseSize, minSize, font) {
   let size = baseSize;
-  ctx.font = `700 ${size}px ${fontStack}`;
+  ctx.font = `700 ${size}px ${font}`;
   while (size > minSize && ctx.measureText(text).width > maxWidth) {
     size -= 1;
-    ctx.font = `700 ${size}px ${fontStack}`;
+    ctx.font = `700 ${size}px ${font}`;
   }
   return size;
 }
 
-function wrapText(ctx, text, maxWidth, baseSize, minSize) {
+function wrapText(ctx, text, maxWidth, baseSize, minSize, font) {
   const words = text.split(/\s+/).filter(Boolean);
   const lines = [];
   let line = "";
@@ -64,14 +68,14 @@ function wrapText(ctx, text, maxWidth, baseSize, minSize) {
 
   for (const word of words) {
     const testLine = line ? `${line} ${word}` : word;
-    ctx.font = `700 ${size}px ${fontStack}`;
+    ctx.font = `700 ${size}px ${font}`;
     if (ctx.measureText(testLine).width <= maxWidth) {
       line = testLine;
       continue;
     }
     if (line) lines.push(line);
     if (ctx.measureText(word).width > maxWidth) {
-      size = fitText(ctx, word, maxWidth, size, minSize);
+      size = fitText(ctx, word, maxWidth, size, minSize, font);
     }
     line = word;
   }
@@ -194,26 +198,28 @@ async function drawCard(data = currentData) {
   }
 
   // ── Source / logo row
+  const activeTitleFont  = controls.titleFont?.value  || fontStack;
+  const activeSourceFont = controls.sourceFont?.value || fontStack;
   const displayUrl  = data.displayUrl || "";
   const sourceTop   = bodyTop + gap;
   const hasLogo     = await drawLogo(data, padding, sourceTop, logoSize);
   const sourceX     = hasLogo ? padding + logoSize + Math.round(width * 0.022) : padding;
   const sourceBaseline = hasLogo ? sourceTop + Math.round(logoSize * 0.72) : sourceTop + labelSize;
 
-  ctx.font      = `400 ${labelSize}px ${fontStack}`;
+  ctx.font      = `400 ${labelSize}px ${activeSourceFont}`;
   ctx.fillStyle = controls.trim.value;
   ctx.fillText(displayUrl, sourceX, sourceBaseline);
 
   // ── Title
   const titleTop         = sourceTop + sourceRowHeight + gap;
   const titleAreaBottom  = bodyTop + lowerHeight - padding;
-  const { lines, size }  = wrapText(ctx, rawTitle, titleMaxWidth, titleBase, 20);
+  const { lines, size }  = wrapText(ctx, rawTitle, titleMaxWidth, titleBase, 20, activeTitleFont);
   const lineHeight       = Math.round(size * 1.2);
   const maxLines         = Math.max(1, Math.floor((titleAreaBottom - titleTop) / lineHeight));
   const visibleLines     = lines.slice(0, maxLines);
 
   ctx.fillStyle = controls.text.value;
-  ctx.font      = `700 ${size}px ${fontStack}`;
+  ctx.font      = `700 ${size}px ${activeTitleFont}`;
   let y = titleTop + size;
   for (const line of visibleLines) {
     ctx.fillText(line, padding, y);
@@ -291,7 +297,9 @@ resetButton.addEventListener("click", async () => {
   manualSource.value = "";
   manualTitle.value  = "";
   hideAutoEditFields();
-  controls.titleSize.value = defaultControls.titleSize;
+  controls.titleSize.value  = defaultControls.titleSize;
+  if (controls.titleFont)  controls.titleFont.value  = defaultControls.titleFont;
+  if (controls.sourceFont) controls.sourceFont.value = defaultControls.sourceFont;
   // Reset swatch selections
   [
     ["backgroundColor", defaultControls.background],
@@ -353,7 +361,7 @@ autoTitle.addEventListener("input", () => {
 });
 
 // ── Control listeners ─────────────────────────────────────
-for (const control of [controls.titleSize, controls.background, controls.text, controls.trim, controls.imageAlign]) {
+for (const control of [controls.titleSize, controls.background, controls.text, controls.trim, controls.imageAlign, controls.titleFont, controls.sourceFont]) {
   control.addEventListener("input", () => drawCard(currentData));
 }
 
