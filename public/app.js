@@ -200,7 +200,7 @@ async function drawCard(data = currentData) {
   const activeTitleFont  = controls.titleFont?.value || fontStack;
 
   // Anton and Anton SC are single-weight display fonts — don't synthesise bold
-  const titleWeight = /Anton/.test(activeTitleFont) ? "400" : "700";
+  const titleWeight = /^Anton/.test(activeTitleFont) ? "400" : "700";
 
   const displayUrl  = data.displayUrl || "";
   const sourceTop   = bodyTop + gap;
@@ -213,13 +213,13 @@ async function drawCard(data = currentData) {
   ctx.fillStyle = controls.trim.value;
   ctx.fillText(displayUrl, sourceX, sourceBaseline);
 
-  // ── Title (line-height: 1.2)
+  // ── Title (line-height: 1)
   const isUppercase = controls.titleUppercase?.checked ?? false;
   const rawTitleFinal = isUppercase ? rawTitle.toUpperCase() : rawTitle;
   const titleTop         = sourceTop + sourceRowHeight + gap;
   const titleAreaBottom  = bodyTop + lowerHeight - padding;
   const { lines, size }  = wrapText(ctx, rawTitleFinal, titleMaxWidth, titleBase, 20, activeTitleFont, titleWeight);
-  const lineHeight       = Math.round(size * 1.2);
+  const lineHeight       = Math.round(size * 1);
   const maxLines         = Math.max(1, Math.floor((titleAreaBottom - titleTop) / lineHeight));
   const visibleLines     = lines.slice(0, maxLines);
 
