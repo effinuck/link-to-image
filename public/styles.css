@@ -253,21 +253,6 @@ canvas {
   .settings-grid {
     grid-template-columns: 1fr 1fr;
   }
-
-  /* Swatches: fill full width, no scroll — shrink to fit 11 in one row */
-  .swatch-picker {
-    overflow-x: visible;
-    gap: 0;
-    justify-content: space-between;
-  }
-
-  .swatch {
-    width: calc((100%) / 11 - 1px);
-    height: 0;
-    padding-bottom: calc((100%) / 11 - 1px);
-    min-width: unset;
-    border-radius: 50%;
-  }
 }
 
 
@@ -331,41 +316,81 @@ canvas {
 
 .stepper-btn:hover { background: #2c3038; }
 
-/* ── Swatch colour picker ────────────────────────────────── */
-.swatch-picker {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 5px;
-  margin-top: 4px;
-  overflow-x: auto;
-  padding-bottom: 2px;
+/* ── Colour-select dropdown ──────────────────────────────── */
+.colour-select {
+  position: relative;
 }
 
-.swatch {
-  width: 26px;
-  height: 26px;
-  min-width: 26px;
+.colour-select__btn {
+  width: 100%;
+  height: 44px;
   min-height: unset;
-  border-radius: 50%;
-  border: 2px solid transparent;
-  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid #3b414c;
+  border-radius: 6px;
+  background: #0d0f12;
+  color: #f4f5fb;
+  font-size: 14px;
+  font-weight: 400;
   cursor: pointer;
+  text-align: left;
+}
+
+.colour-select__btn:hover { background: #141720; }
+
+.colour-select__dot {
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  border-radius: 50%;
+  display: inline-block;
+  border: 1px solid rgba(255,255,255,0.15);
   flex-shrink: 0;
-  transition: transform 0.1s;
-  outline: none;
-  box-shadow: 0 0 0 1px #3b414c;
 }
 
-.swatch:hover { transform: scale(1.15); background: inherit; }
-
-.swatch.selected {
-  border-color: #f4f5fb;
-  box-shadow: 0 0 0 1px #f4f5fb;
-  transform: scale(1.15);
+.colour-select__name {
+  flex: 1;
 }
 
-.swatch[data-color="#ffffff"]         { box-shadow: 0 0 0 1px #6b7280; }
-.swatch[data-color="#ffffff"].selected{ box-shadow: 0 0 0 2px #f4f5fb; }
+.colour-select__arrow {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.colour-select__list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background: #191c21;
+  border: 1px solid #3b414c;
+  border-radius: 8px;
+  padding: 4px;
+  margin: 0;
+  list-style: none;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.colour-select__list[hidden] { display: none; }
+
+.colour-select__list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #f4f5fb;
+}
+
+.colour-select__list li:hover { background: #252a31; }
 
 /* ── Auto-edit fields (shown after fetch) ────────────────── */
 #autoEditFields {
@@ -378,27 +403,3 @@ canvas {
 }
 
 #autoEditFields[hidden] { display: none; }
-
-/* ── Checkbox label ──────────────────────────────────────── */
-.checkbox-label {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 10px;
-  font-size: 14px;
-  font-weight: 700;
-  color: #c8ced8;
-  cursor: pointer;
-}
-
-.checkbox-label input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  min-width: 18px;
-  border: 1px solid #3b414c;
-  border-radius: 4px;
-  background: #0d0f12;
-  accent-color: #f4f5fb;
-  cursor: pointer;
-  padding: 0;
-}

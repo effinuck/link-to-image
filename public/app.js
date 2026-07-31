@@ -324,19 +324,10 @@ resetButton.addEventListener("click", async () => {
   hideAutoEditFields();
   controls.titleSize.value  = defaultControls.titleSize;
   if (controls.titleFont)    controls.titleFont.value    = defaultControls.titleFont;
-  // Reset swatch selections
-  [
-    ["backgroundColor", defaultControls.background],
-    ["textColor",       defaultControls.text],
-    ["trimColor",       defaultControls.trim],
-  ].forEach(([id, val]) => {
-    const picker = document.querySelector(`.swatch-picker[data-target="${id}"]`);
-    picker?.querySelectorAll(".swatch").forEach(s =>
-      s.classList.toggle("selected", s.dataset.color.toLowerCase() === val.toLowerCase())
-    );
-    const hidden = document.querySelector(`#${id}`);
-    if (hidden) hidden.value = val;
-  });
+  // Reset colour-select dropdowns
+  resetColourSelect("bgColourSelect",   defaultControls.background, "Black");
+  resetColourSelect("textColourSelect", defaultControls.text,       "White");
+  resetColourSelect("trimColourSelect", defaultControls.trim,       "Saffron");
   controls.logoUpload.value    = "";
   controls.bgImageUpload.value = "";
   uploadedLogoSrc    = "";
@@ -345,19 +336,53 @@ resetButton.addEventListener("click", async () => {
   setStatus("Reset.");
 });
 
-// ── Swatch pickers ────────────────────────────────────────
-document.querySelectorAll(".swatch-picker").forEach((picker) => {
-  const targetId    = picker.dataset.target;
-  const hiddenInput = document.querySelector(`#${targetId}`);
-  picker.querySelectorAll(".swatch").forEach((swatch) => {
-    swatch.addEventListener("click", () => {
-      picker.querySelectorAll(".swatch").forEach(s => s.classList.remove("selected"));
-      swatch.classList.add("selected");
-      hiddenInput.value = swatch.dataset.color;
-      hiddenInput.dispatchEvent(new Event("input"));
+// ── Colour-select dropdowns ───────────────────────────────
+function initColourSelects() {
+  document.querySelectorAll(".colour-select").forEach((widget) => {
+    const targetId = widget.dataset.target;
+    const hidden   = document.querySelector(`#${targetId}`);
+    const btn      = widget.querySelector(".colour-select__btn");
+    const list     = widget.querySelector(".colour-select__list");
+    const dotBtn   = btn.querySelector(".colour-select__dot");
+    const nameBtn  = btn.querySelector(".colour-select__name");
+
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const isOpen = !list.hidden;
+      document.querySelectorAll(".colour-select__list").forEach(l => { l.hidden = true; });
+      list.hidden = isOpen;
+    });
+
+    list.querySelectorAll("li").forEach((li) => {
+      li.addEventListener("click", () => {
+        const color = li.dataset.color;
+        const name  = li.querySelector(".colour-select__dot").nextSibling?.textContent?.trim()
+                      || li.textContent.trim();
+        dotBtn.style.background = color;
+        nameBtn.textContent     = name;
+        hidden.value            = color;
+        list.hidden             = true;
+        hidden.dispatchEvent(new Event("input"));
+      });
     });
   });
-});
+
+  document.addEventListener("click", () => {
+    document.querySelectorAll(".colour-select__list").forEach(l => { l.hidden = true; });
+  });
+}
+
+initColourSelects();
+
+function resetColourSelect(widgetId, color, name) {
+  const widget = document.querySelector(`#${widgetId}`);
+  if (!widget) return;
+  widget.querySelector(".colour-select__dot").style.background = color;
+  widget.querySelector(".colour-select__name").textContent     = name;
+  widget.querySelector(".colour-select__list").hidden          = true;
+  const hidden = document.querySelector(`#${widget.dataset.target}`);
+  if (hidden) hidden.value = color;
+}
 
 // ── Editable auto fields ──────────────────────────────────
 const autoEditFields = document.querySelector("#autoEditFields");

@@ -66,61 +66,90 @@
         </section>
 
         <div class="settings-grid">
-          <!-- Text Background — spans full row -->
-          <label class="span-full">
+
+          <!-- Text Background + Text Colour — two columns -->
+          <label>
             Text Background
-            <div class="swatch-picker" data-target="backgroundColor">
-              <button type="button" class="swatch selected" data-color="#000000" style="background:#000000" title="Black"></button>
-              <button type="button" class="swatch" data-color="#ffffff" style="background:#ffffff" title="White"></button>
-              <button type="button" class="swatch" data-color="#FFCC00" style="background:#FFCC00" title="Saffron"></button>
-              <button type="button" class="swatch" data-color="#CC0000" style="background:#CC0000" title="Red"></button>
-              <button type="button" class="swatch" data-color="#214DCF" style="background:#214DCF" title="Royal Blue"></button>
-              <button type="button" class="swatch" data-color="#008A2E" style="background:#008A2E" title="Green"></button>
-              <button type="button" class="swatch" data-color="#690000" style="background:#690000" title="Maroon"></button>
-              <button type="button" class="swatch" data-color="#360088" style="background:#360088" title="Purple"></button>
-              <button type="button" class="swatch" data-color="#FF8400" style="background:#FF8400" title="Orange"></button>
-              <button type="button" class="swatch" data-color="#000F60" style="background:#000F60" title="Navy"></button>
-              <button type="button" class="swatch" data-color="#49C3FC" style="background:#49C3FC" title="Sky Blue"></button>
+            <div class="colour-select" id="bgColourSelect" data-target="backgroundColor" data-value="#000000">
+              <button type="button" class="colour-select__btn" aria-haspopup="listbox">
+                <span class="colour-select__dot" style="background:#000000"></span>
+                <span class="colour-select__name">Black</span>
+                <span class="colour-select__arrow">▾</span>
+              </button>
+              <ul class="colour-select__list" role="listbox" hidden>
+                <li role="option" data-color="#000000"><span class="colour-select__dot" style="background:#000000"></span>Black</li>
+                <li role="option" data-color="#ffffff"><span class="colour-select__dot" style="background:#ffffff"></span>White</li>
+                <li role="option" data-color="#FFCC00"><span class="colour-select__dot" style="background:#FFCC00"></span>Saffron</li>
+                <li role="option" data-color="#CC0000"><span class="colour-select__dot" style="background:#CC0000"></span>Red</li>
+                <li role="option" data-color="#214DCF"><span class="colour-select__dot" style="background:#214DCF"></span>Royal Blue</li>
+                <li role="option" data-color="#008A2E"><span class="colour-select__dot" style="background:#008A2E"></span>Green</li>
+                <li role="option" data-color="#690000"><span class="colour-select__dot" style="background:#690000"></span>Maroon</li>
+                <li role="option" data-color="#360088"><span class="colour-select__dot" style="background:#360088"></span>Purple</li>
+                <li role="option" data-color="#FF8400"><span class="colour-select__dot" style="background:#FF8400"></span>Orange</li>
+                <li role="option" data-color="#000F60"><span class="colour-select__dot" style="background:#000F60"></span>Navy</li>
+                <li role="option" data-color="#49C3FC"><span class="colour-select__dot" style="background:#49C3FC"></span>Sky Blue</li>
+              </ul>
             </div>
             <input type="hidden" id="backgroundColor" value="#000000">
           </label>
 
-          <!-- Text Colour -->
-          <label class="span-full">
+          <label>
             Text Colour
-            <div class="swatch-picker" data-target="textColor">
-              <button type="button" class="swatch" data-color="#000000" style="background:#000000" title="Black"></button>
-              <button type="button" class="swatch selected" data-color="#ffffff" style="background:#ffffff" title="White"></button>
-              <button type="button" class="swatch" data-color="#FFCC00" style="background:#FFCC00" title="Saffron"></button>
-              <button type="button" class="swatch" data-color="#CC0000" style="background:#CC0000" title="Red"></button>
-              <button type="button" class="swatch" data-color="#214DCF" style="background:#214DCF" title="Royal Blue"></button>
-              <button type="button" class="swatch" data-color="#008A2E" style="background:#008A2E" title="Green"></button>
-              <button type="button" class="swatch" data-color="#690000" style="background:#690000" title="Maroon"></button>
-              <button type="button" class="swatch" data-color="#360088" style="background:#360088" title="Purple"></button>
-              <button type="button" class="swatch" data-color="#FF8400" style="background:#FF8400" title="Orange"></button>
-              <button type="button" class="swatch" data-color="#000F60" style="background:#000F60" title="Navy"></button>
-              <button type="button" class="swatch" data-color="#49C3FC" style="background:#49C3FC" title="Sky Blue"></button>
+            <div class="colour-select" id="textColourSelect" data-target="textColor" data-value="#ffffff">
+              <button type="button" class="colour-select__btn" aria-haspopup="listbox">
+                <span class="colour-select__dot" style="background:#ffffff"></span>
+                <span class="colour-select__name">White</span>
+                <span class="colour-select__arrow">▾</span>
+              </button>
+              <ul class="colour-select__list" role="listbox" hidden>
+                <li role="option" data-color="#000000"><span class="colour-select__dot" style="background:#000000"></span>Black</li>
+                <li role="option" data-color="#ffffff"><span class="colour-select__dot" style="background:#ffffff"></span>White</li>
+                <li role="option" data-color="#FFCC00"><span class="colour-select__dot" style="background:#FFCC00"></span>Saffron</li>
+                <li role="option" data-color="#CC0000"><span class="colour-select__dot" style="background:#CC0000"></span>Red</li>
+                <li role="option" data-color="#214DCF"><span class="colour-select__dot" style="background:#214DCF"></span>Royal Blue</li>
+                <li role="option" data-color="#008A2E"><span class="colour-select__dot" style="background:#008A2E"></span>Green</li>
+                <li role="option" data-color="#690000"><span class="colour-select__dot" style="background:#690000"></span>Maroon</li>
+                <li role="option" data-color="#360088"><span class="colour-select__dot" style="background:#360088"></span>Purple</li>
+                <li role="option" data-color="#FF8400"><span class="colour-select__dot" style="background:#FF8400"></span>Orange</li>
+                <li role="option" data-color="#000F60"><span class="colour-select__dot" style="background:#000F60"></span>Navy</li>
+                <li role="option" data-color="#49C3FC"><span class="colour-select__dot" style="background:#49C3FC"></span>Sky Blue</li>
+              </ul>
             </div>
             <input type="hidden" id="textColor" value="#ffffff">
           </label>
 
-          <!-- Trim/Source Colour -->
-          <label class="span-full">
+          <!-- Trim/Source Colour + Title Font — two columns -->
+          <label>
             Trim/Source Colour
-            <div class="swatch-picker" data-target="trimColor">
-              <button type="button" class="swatch" data-color="#000000" style="background:#000000" title="Black"></button>
-              <button type="button" class="swatch" data-color="#ffffff" style="background:#ffffff" title="White"></button>
-              <button type="button" class="swatch selected" data-color="#FFCC00" style="background:#FFCC00" title="Saffron"></button>
-              <button type="button" class="swatch" data-color="#CC0000" style="background:#CC0000" title="Red"></button>
-              <button type="button" class="swatch" data-color="#214DCF" style="background:#214DCF" title="Royal Blue"></button>
-              <button type="button" class="swatch" data-color="#008A2E" style="background:#008A2E" title="Green"></button>
-              <button type="button" class="swatch" data-color="#690000" style="background:#690000" title="Maroon"></button>
-              <button type="button" class="swatch" data-color="#360088" style="background:#360088" title="Purple"></button>
-              <button type="button" class="swatch" data-color="#FF8400" style="background:#FF8400" title="Orange"></button>
-              <button type="button" class="swatch" data-color="#000F60" style="background:#000F60" title="Navy"></button>
-              <button type="button" class="swatch" data-color="#49C3FC" style="background:#49C3FC" title="Sky Blue"></button>
+            <div class="colour-select" id="trimColourSelect" data-target="trimColor" data-value="#FFCC00">
+              <button type="button" class="colour-select__btn" aria-haspopup="listbox">
+                <span class="colour-select__dot" style="background:#FFCC00"></span>
+                <span class="colour-select__name">Saffron</span>
+                <span class="colour-select__arrow">▾</span>
+              </button>
+              <ul class="colour-select__list" role="listbox" hidden>
+                <li role="option" data-color="#000000"><span class="colour-select__dot" style="background:#000000"></span>Black</li>
+                <li role="option" data-color="#ffffff"><span class="colour-select__dot" style="background:#ffffff"></span>White</li>
+                <li role="option" data-color="#FFCC00"><span class="colour-select__dot" style="background:#FFCC00"></span>Saffron</li>
+                <li role="option" data-color="#CC0000"><span class="colour-select__dot" style="background:#CC0000"></span>Red</li>
+                <li role="option" data-color="#214DCF"><span class="colour-select__dot" style="background:#214DCF"></span>Royal Blue</li>
+                <li role="option" data-color="#008A2E"><span class="colour-select__dot" style="background:#008A2E"></span>Green</li>
+                <li role="option" data-color="#690000"><span class="colour-select__dot" style="background:#690000"></span>Maroon</li>
+                <li role="option" data-color="#360088"><span class="colour-select__dot" style="background:#360088"></span>Purple</li>
+                <li role="option" data-color="#FF8400"><span class="colour-select__dot" style="background:#FF8400"></span>Orange</li>
+                <li role="option" data-color="#000F60"><span class="colour-select__dot" style="background:#000F60"></span>Navy</li>
+                <li role="option" data-color="#49C3FC"><span class="colour-select__dot" style="background:#49C3FC"></span>Sky Blue</li>
+              </ul>
             </div>
             <input type="hidden" id="trimColor" value="#FFCC00">
+          </label>
+
+          <label>
+            Title Font
+            <select id="titleFont">
+              <option value="Poppins, Arial, sans-serif">Poppins</option>
+              <option value="Anton, Arial, sans-serif">Anton</option>
+            </select>
           </label>
 
           <label class="span-full">
@@ -132,7 +161,7 @@
             <input id="bgImageUpload" type="file" accept="image/*">
           </label>
 
-          <!-- Title Size + Image Align last -->
+          <!-- Title Size + Image Align -->
           <label>
             Title Size
             <div class="stepper">
@@ -147,13 +176,6 @@
               <option value="center">Centre</option>
               <option value="left">Left</option>
               <option value="right">Right</option>
-            </select>
-          </label>
-          <label class="span-full">
-            Title Font
-            <select id="titleFont">
-              <option value="Poppins, Arial, sans-serif">Poppins</option>
-              <option value="Anton, Arial, sans-serif">Anton</option>
             </select>
           </label>
 
