@@ -200,7 +200,13 @@ async function drawCard(data = currentData) {
   const activeTitleFont  = controls.titleFont?.value || fontStack;
 
   // Anton and Anton SC are single-weight display fonts — don't synthesise bold
-  const titleWeight = /^Anton/.test(activeTitleFont) ? "400" : "700";
+  const isAnton     = /^Anton/.test(activeTitleFont);
+  const titleWeight = isAnton ? "400" : "700";
+
+  // Anton SC: canvas needs the font loaded via FontFace API to render correctly
+  if (activeTitleFont.startsWith("Anton SC")) {
+    try { await document.fonts.load(`400 60px "Anton SC"`); } catch {}
+  }
 
   const displayUrl  = data.displayUrl || "";
   const sourceTop   = bodyTop + gap;
@@ -213,13 +219,14 @@ async function drawCard(data = currentData) {
   ctx.fillStyle = controls.trim.value;
   ctx.fillText(displayUrl, sourceX, sourceBaseline);
 
-  // ── Title (line-height: 1)
+  // ── Title (line-height: 1.1 for Anton fonts, 1.2 for Poppins)
   const isUppercase = controls.titleUppercase?.checked ?? false;
   const rawTitleFinal = isUppercase ? rawTitle.toUpperCase() : rawTitle;
   const titleTop         = sourceTop + sourceRowHeight + gap;
   const titleAreaBottom  = bodyTop + lowerHeight - padding;
   const { lines, size }  = wrapText(ctx, rawTitleFinal, titleMaxWidth, titleBase, 20, activeTitleFont, titleWeight);
-  const lineHeight       = Math.round(size * 1.1);
+  const lineHeightMultiplier = isAnton ? 1.1 : 1.2;
+  const lineHeight       = Math.round(size * lineHeightMultiplier);
   const maxLines         = Math.max(1, Math.floor((titleAreaBottom - titleTop) / lineHeight));
   const visibleLines     = lines.slice(0, maxLines);
 

@@ -253,6 +253,21 @@ canvas {
   .settings-grid {
     grid-template-columns: 1fr 1fr;
   }
+
+  /* Swatches: fill full width, no scroll — shrink to fit 11 in one row */
+  .swatch-picker {
+    overflow-x: visible;
+    gap: 0;
+    justify-content: space-between;
+  }
+
+  .swatch {
+    width: calc((100%) / 11 - 1px);
+    height: 0;
+    padding-bottom: calc((100%) / 11 - 1px);
+    min-width: unset;
+    border-radius: 50%;
+  }
 }
 
 
