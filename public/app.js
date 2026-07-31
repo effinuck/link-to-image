@@ -245,7 +245,7 @@ async function drawCard(data = currentData) {
 
   ctx.fillStyle = controls.text.value;
   ctx.font      = `${titleWeight} ${size}px ${safeTitleFont}`;
-  ctx.letterSpacing = activeTitleFont.startsWith("Anton") ? "2px" : "0px";
+  ctx.letterSpacing = activeTitleFont.startsWith("Anton") ? "1px" : "0px";
   let y = titleTop + size;
   for (const line of visibleLines) {
     ctx.fillText(line, padding, y);
