@@ -203,7 +203,20 @@ async function drawCard(data = currentData) {
   const isAnton     = /^Anton/.test(activeTitleFont);
   const titleWeight = isAnton ? "400" : "700";
 
-  // Anton SC: canvas needs the font loaded via FontFace API to render correctly
+  // Build a canvas-safe font string: quote the primary family name if it contains spaces
+  // e.g. "Anton SC, Arial, sans-serif" → '"Anton SC", Arial, sans-serif'
+  function canvasFontStack(stack) {
+    return stack.replace(/^([^,]+)/, (family) => {
+      family = family.trim();
+      if (family.includes(" ") && !family.startsWith('"') && !family.startsWith("'")) {
+        return `"${family}"`;
+      }
+      return family;
+    });
+  }
+  const safeTitleFont = canvasFontStack(activeTitleFont);
+
+  // Ensure Anton SC is fully loaded before drawing
   if (activeTitleFont.startsWith("Anton SC")) {
     try { await document.fonts.load(`400 60px "Anton SC"`); } catch {}
   }
@@ -224,14 +237,14 @@ async function drawCard(data = currentData) {
   const rawTitleFinal = isUppercase ? rawTitle.toUpperCase() : rawTitle;
   const titleTop         = sourceTop + sourceRowHeight + gap;
   const titleAreaBottom  = bodyTop + lowerHeight - padding;
-  const { lines, size }  = wrapText(ctx, rawTitleFinal, titleMaxWidth, titleBase, 20, activeTitleFont, titleWeight);
+  const { lines, size }  = wrapText(ctx, rawTitleFinal, titleMaxWidth, titleBase, 20, safeTitleFont, titleWeight);
   const lineHeightMultiplier = isAnton ? 1.1 : 1.2;
   const lineHeight       = Math.round(size * lineHeightMultiplier);
   const maxLines         = Math.max(1, Math.floor((titleAreaBottom - titleTop) / lineHeight));
   const visibleLines     = lines.slice(0, maxLines);
 
   ctx.fillStyle = controls.text.value;
-  ctx.font      = `${titleWeight} ${size}px ${activeTitleFont}`;
+  ctx.font      = `${titleWeight} ${size}px ${safeTitleFont}`;
   let y = titleTop + size;
   for (const line of visibleLines) {
     ctx.fillText(line, padding, y);
