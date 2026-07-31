@@ -24,7 +24,6 @@ const controls = {
   logoUpload:   document.querySelector("#logoUpload"),
   bgImageUpload:document.querySelector("#bgImageUpload"),
   titleFont:    document.querySelector("#titleFont"),
-  titleUppercase: document.querySelector("#titleUppercase"),
 };
 
 let uploadedLogoSrc    = "";
@@ -232,9 +231,8 @@ async function drawCard(data = currentData) {
   ctx.fillStyle = controls.trim.value;
   ctx.fillText(displayUrl, sourceX, sourceBaseline);
 
-  // ── Title (line-height: 1.1 for Anton fonts, 1.2 for Poppins)
-  const isUppercase = controls.titleUppercase?.checked ?? false;
-  const rawTitleFinal = isUppercase ? rawTitle.toUpperCase() : rawTitle;
+  // Anton always renders uppercase; Poppins uses title as-is
+  const rawTitleFinal = isAnton ? rawTitle.toUpperCase() : rawTitle;
   const titleTop         = sourceTop + sourceRowHeight + gap;
   const titleAreaBottom  = bodyTop + lowerHeight - padding;
   const { lines, size }  = wrapText(ctx, rawTitleFinal, titleMaxWidth, titleBase, 20, safeTitleFont, titleWeight);
@@ -326,7 +324,6 @@ resetButton.addEventListener("click", async () => {
   hideAutoEditFields();
   controls.titleSize.value  = defaultControls.titleSize;
   if (controls.titleFont)    controls.titleFont.value    = defaultControls.titleFont;
-  if (controls.titleUppercase) controls.titleUppercase.checked = false;
   // Reset swatch selections
   [
     ["backgroundColor", defaultControls.background],
@@ -391,7 +388,6 @@ autoTitle.addEventListener("input", () => {
 for (const control of [controls.titleSize, controls.background, controls.text, controls.trim, controls.imageAlign, controls.titleFont]) {
   control.addEventListener("input", () => drawCard(currentData));
 }
-controls.titleUppercase.addEventListener("change", () => drawCard(currentData));
 
 // ── Logo upload ───────────────────────────────────────────
 controls.logoUpload.addEventListener("change", () => {
