@@ -219,7 +219,7 @@ async function drawCard(data = currentData) {
   const titleTop         = sourceTop + sourceRowHeight + gap;
   const titleAreaBottom  = bodyTop + lowerHeight - padding;
   const { lines, size }  = wrapText(ctx, rawTitleFinal, titleMaxWidth, titleBase, 20, activeTitleFont, titleWeight);
-  const lineHeight       = Math.round(size * 1);
+  const lineHeight       = Math.round(size * 1.1);
   const maxLines         = Math.max(1, Math.floor((titleAreaBottom - titleTop) / lineHeight));
   const visibleLines     = lines.slice(0, maxLines);
 
