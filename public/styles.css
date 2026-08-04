@@ -403,3 +403,32 @@ canvas {
 }
 
 #autoEditFields[hidden] { display: none; }
+
+/* ── Checkbox label ──────────────────────────────────────── */
+.checkbox-label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #c8ced8;
+  cursor: pointer;
+}
+
+.checkbox-label.align-end {
+  align-self: end;
+  padding-bottom: 12px;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  border: 1px solid #3b414c;
+  border-radius: 4px;
+  background: #0d0f12;
+  accent-color: #f4f5fb;
+  cursor: pointer;
+  padding: 0;
+}

@@ -23,7 +23,8 @@ const controls = {
   trim:         document.querySelector("#trimColor"),
   logoUpload:   document.querySelector("#logoUpload"),
   bgImageUpload:document.querySelector("#bgImageUpload"),
-  titleFont:    document.querySelector("#titleFont"),
+  titleFont:    null, // Anton SC is the fixed title font — no selector needed
+  titleUppercase: document.querySelector("#titleUppercase"),
 };
 
 let uploadedLogoSrc    = "";
@@ -40,7 +41,6 @@ const defaultControls = {
   background: "#000000",
   text:       "#ffffff",
   trim:       "#FFCC00",
-  titleFont:  "Poppins, Arial, sans-serif",
 };
 
 let currentData = { ...defaultData };
@@ -195,30 +195,12 @@ async function drawCard(data = currentData) {
     ctx.fillRect(0, bodyTop, width, lowerHeight);
   }
 
-  // ── Source / logo row
-  const activeTitleFont  = controls.titleFont?.value || fontStack;
-
-  // Anton and Anton SC are single-weight display fonts — don't synthesise bold
-  const isAnton     = /^Anton/.test(activeTitleFont);
-  const titleWeight = isAnton ? "400" : "700";
-
-  // Build a canvas-safe font string: quote the primary family name if it contains spaces
-  // e.g. "Anton SC, Arial, sans-serif" → '"Anton SC", Arial, sans-serif'
-  function canvasFontStack(stack) {
-    return stack.replace(/^([^,]+)/, (family) => {
-      family = family.trim();
-      if (family.includes(" ") && !family.startsWith('"') && !family.startsWith("'")) {
-        return `"${family}"`;
-      }
-      return family;
-    });
-  }
-  const safeTitleFont = canvasFontStack(activeTitleFont);
+  // ── Source / logo row — Anton SC is the fixed title font
+  const safeTitleFont = `"Anton SC", Arial, sans-serif`;
+  const titleWeight   = "400"; // Anton SC is a single-weight display font
 
   // Ensure Anton SC is fully loaded before drawing
-  if (activeTitleFont.startsWith("Anton SC")) {
-    try { await document.fonts.load(`400 60px "Anton SC"`); } catch {}
-  }
+  try { await document.fonts.load(`400 60px "Anton SC"`); } catch {}
 
   const displayUrl  = data.displayUrl || "";
   const sourceTop   = bodyTop + gap;
@@ -231,19 +213,19 @@ async function drawCard(data = currentData) {
   ctx.fillStyle = controls.trim.value;
   ctx.fillText(displayUrl, sourceX, sourceBaseline);
 
-  // Anton always renders uppercase; Poppins uses title as-is
-  const rawTitleFinal = isAnton ? rawTitle.toUpperCase() : rawTitle;
+  // Apply uppercase if checkbox checked
+  const isUppercase  = controls.titleUppercase?.checked ?? false;
+  const rawTitleFinal = isUppercase ? rawTitle.toUpperCase() : rawTitle;
   const titleTop         = sourceTop + sourceRowHeight + gap;
   const titleAreaBottom  = bodyTop + lowerHeight - padding;
   const { lines, size }  = wrapText(ctx, rawTitleFinal, titleMaxWidth, titleBase, 20, safeTitleFont, titleWeight);
-  const lineHeightMultiplier = isAnton ? 1.1 : 1.2;
-  const lineHeight       = Math.round(size * lineHeightMultiplier);
+  const lineHeight       = Math.round(size * 1.1);
   const maxLines         = Math.max(1, Math.floor((titleAreaBottom - titleTop) / lineHeight));
   const visibleLines     = lines.slice(0, maxLines);
 
-  ctx.fillStyle = controls.text.value;
-  ctx.font      = `${titleWeight} ${size}px ${safeTitleFont}`;
-  ctx.letterSpacing = activeTitleFont.startsWith("Anton") ? "1px" : "0px";
+  ctx.fillStyle     = controls.text.value;
+  ctx.font          = `${titleWeight} ${size}px ${safeTitleFont}`;
+  ctx.letterSpacing = "1px";
   let y = titleTop + size;
   for (const line of visibleLines) {
     ctx.fillText(line, padding, y);
@@ -323,7 +305,7 @@ resetButton.addEventListener("click", async () => {
   manualTitle.value  = "";
   hideAutoEditFields();
   controls.titleSize.value  = defaultControls.titleSize;
-  if (controls.titleFont)    controls.titleFont.value    = defaultControls.titleFont;
+  if (controls.titleUppercase) controls.titleUppercase.checked = false;
   // Reset colour-select dropdowns
   resetColourSelect("bgColourSelect",   defaultControls.background, "Black");
   resetColourSelect("textColourSelect", defaultControls.text,       "White");
@@ -410,9 +392,10 @@ autoTitle.addEventListener("input", () => {
 });
 
 // ── Control listeners ─────────────────────────────────────
-for (const control of [controls.titleSize, controls.background, controls.text, controls.trim, controls.imageAlign, controls.titleFont]) {
+for (const control of [controls.titleSize, controls.background, controls.text, controls.trim, controls.imageAlign]) {
   control.addEventListener("input", () => drawCard(currentData));
 }
+controls.titleUppercase?.addEventListener("change", () => drawCard(currentData));
 
 // ── Logo upload ───────────────────────────────────────────
 controls.logoUpload.addEventListener("change", () => {

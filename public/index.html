@@ -16,7 +16,7 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Poppins:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Anton+SC&family=Poppins:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/styles.css">
   </head>
   <body>
@@ -118,7 +118,7 @@
             <input type="hidden" id="textColor" value="#ffffff">
           </label>
 
-          <!-- Trim/Source Colour + Title Font — two columns -->
+          <!-- Trim/Source Colour + Uppercase — two columns -->
           <label>
             Trim/Source Colour
             <div class="colour-select" id="trimColourSelect" data-target="trimColor" data-value="#FFCC00">
@@ -144,12 +144,9 @@
             <input type="hidden" id="trimColor" value="#FFCC00">
           </label>
 
-          <label>
-            Title Font
-            <select id="titleFont">
-              <option value="Poppins, Arial, sans-serif">Poppins</option>
-              <option value="Anton, Arial, sans-serif">Anton</option>
-            </select>
+          <label class="checkbox-label align-end">
+            <input type="checkbox" id="titleUppercase">
+            Uppercase title
           </label>
 
           <label class="span-full">
