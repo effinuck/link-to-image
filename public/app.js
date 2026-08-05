@@ -38,7 +38,7 @@ const defaultData = {
 };
 
 const defaultControls = {
-  titleSize:  "58",
+  titleSize:  "40",
   background: "#000000",
   text:       "#ffffff",
   trim:       "#FFCC00",
@@ -138,7 +138,6 @@ async function drawCard(data = currentData) {
   const gap         = Math.round(width * 0.042);
   const lowerHeight = totalHeight - imageHeight - trimHeight;
 
-  const titleBase    = Number(controls.titleSize.value) || Math.round(width * 0.069);
   const titleMaxWidth= width - padding * 2;
   const rawTitle     = decodeHtmlEntities(data.title || "Untitled page");
   const logoSize     = Math.round(width * 0.059);
@@ -217,12 +216,32 @@ async function drawCard(data = currentData) {
   // Apply uppercase if checkbox checked
   const isUppercase   = controls.titleUppercase?.checked ?? false;
   const rawTitleFinal = isUppercase ? rawTitle.toUpperCase() : rawTitle;
-  const titleTop         = sourceTop + sourceRowHeight + gap;
-  const titleAreaBottom  = bodyTop + lowerHeight - padding;
-  const { lines, size }  = wrapText(ctx, rawTitleFinal, titleMaxWidth, titleBase, 20, safeTitleFont, titleWeight);
-  const lineHeight       = Math.round(size * 1.1);
-  const maxLines         = Math.max(1, Math.floor((titleAreaBottom - titleTop) / lineHeight));
-  const visibleLines     = lines.slice(0, maxLines);
+  const titleTop        = sourceTop + sourceRowHeight + gap;
+  const titleAreaBottom = bodyTop + lowerHeight - padding;
+  const titleAreaHeight = titleAreaBottom - titleTop;
+
+  // Start from the user's chosen size, then grow to fill available space
+  const userSize = Number(controls.titleSize.value) || Math.round(width * 0.069);
+
+  // Find the largest font size where all lines fit within the available height
+  function calcLines(size) {
+    return wrapText(ctx, rawTitleFinal, titleMaxWidth, size, 20, safeTitleFont, titleWeight);
+  }
+
+  // Grow from userSize up until text overflows, then step back one
+  let bestSize = userSize;
+  for (let s = userSize; s <= 200; s += 1) {
+    const { lines } = calcLines(s);
+    const lh = Math.round(s * 1); // line-height: 1
+    const usedHeight = lines.length * lh;
+    if (usedHeight > titleAreaHeight) break;
+    bestSize = s;
+  }
+
+  const { lines, size } = calcLines(bestSize);
+  const lineHeight      = Math.round(size * 1); // line-height: 1
+  const maxLines        = Math.max(1, Math.floor(titleAreaHeight / lineHeight));
+  const visibleLines    = lines.slice(0, maxLines);
 
   ctx.fillStyle     = controls.text.value;
   ctx.font          = `${titleWeight} ${size}px ${safeTitleFont}`;
