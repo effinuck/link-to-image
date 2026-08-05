@@ -23,9 +23,10 @@ const controls = {
   trim:         document.querySelector("#trimColor"),
   logoUpload:   document.querySelector("#logoUpload"),
   bgImageUpload:document.querySelector("#bgImageUpload"),
-  titleFont:      null, // Saira Condensed is the fixed title font
+  titleFont:      null,
   titleWeight:    document.querySelector("#titleWeight"),
   titleUppercase: document.querySelector("#titleUppercase"),
+  titleFit:       document.querySelector("#titleFit"),
 };
 
 let uploadedLogoSrc    = "";
@@ -38,7 +39,7 @@ const defaultData = {
 };
 
 const defaultControls = {
-  titleSize:  "200",
+  titleSize:  "58",
   background: "#000000",
   text:       "#ffffff",
   trim:       "#FFCC00",
@@ -220,20 +221,24 @@ async function drawCard(data = currentData) {
   const titleAreaBottom = bodyTop + lowerHeight - padding;
   const titleAreaHeight = titleAreaBottom - titleTop;
 
-  // Title Size = maximum font size cap. Text grows to fill the area but never exceeds the cap.
-  const sizeMax = Number(controls.titleSize.value) || 200;
+  const userSize  = Number(controls.titleSize.value) || 58;
+  const isFit     = controls.titleFit?.checked ?? false;
 
   function calcLines(size) {
     return wrapText(ctx, rawTitleFinal, titleMaxWidth, size, 20, safeTitleFont, titleWeight);
   }
 
-  // Grow from min upward until text overflows height or hits the cap
-  let bestSize = 20;
-  for (let s = 20; s <= sizeMax; s += 1) {
-    const { lines } = calcLines(s);
-    const usedHeight = lines.length * Math.round(s * 1);
-    if (usedHeight > titleAreaHeight) break;
-    bestSize = s;
+  let bestSize;
+  if (isFit) {
+    // Grow from min up to userSize until text overflows height
+    bestSize = 20;
+    for (let s = 20; s <= userSize; s += 1) {
+      const { lines } = calcLines(s);
+      if (lines.length * Math.round(s * 1) > titleAreaHeight) break;
+      bestSize = s;
+    }
+  } else {
+    bestSize = userSize;
   }
 
   const { lines, size } = calcLines(bestSize);
@@ -323,8 +328,9 @@ resetButton.addEventListener("click", async () => {
   manualTitle.value  = "";
   hideAutoEditFields();
   controls.titleSize.value  = defaultControls.titleSize;
-  if (controls.titleWeight)   controls.titleWeight.value   = "700";
+  if (controls.titleWeight)    controls.titleWeight.value      = "700";
   if (controls.titleUppercase) controls.titleUppercase.checked = false;
+  if (controls.titleFit)       controls.titleFit.checked       = false;
   // Reset colour-select dropdowns
   resetColourSelect("bgColourSelect",   defaultControls.background, "Black");
   resetColourSelect("textColourSelect", defaultControls.text,       "White");
@@ -415,6 +421,7 @@ for (const control of [controls.titleSize, controls.background, controls.text, c
   control.addEventListener("input", () => drawCard(currentData));
 }
 controls.titleUppercase?.addEventListener("change", () => drawCard(currentData));
+controls.titleFit?.addEventListener("change", () => drawCard(currentData));
 
 // ── Logo upload ───────────────────────────────────────────
 controls.logoUpload.addEventListener("change", () => {

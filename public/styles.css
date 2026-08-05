@@ -414,17 +414,14 @@ canvas {
   font-weight: 700;
   color: #c8ced8;
   cursor: pointer;
-}
-
-.checkbox-label.align-end {
-  align-self: end;
-  padding-bottom: 12px;
+  padding-top: 8px;
 }
 
 .checkbox-label input[type="checkbox"] {
   width: 18px;
   height: 18px;
   min-width: 18px;
+  flex-shrink: 0;
   border: 1px solid #3b414c;
   border-radius: 4px;
   background: #0d0f12;

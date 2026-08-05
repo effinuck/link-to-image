@@ -152,10 +152,6 @@
                 <option value="800">Extra Bold</option>
               </select>
             </label>
-            <label class="checkbox-label">
-              <input type="checkbox" id="titleUppercase">
-              Uppercase
-            </label>
           </div>
 
           <label class="span-full">
@@ -169,10 +165,10 @@
 
           <!-- Title Size + Image Align -->
           <label>
-            Max Title Size
+            Title Size
             <div class="stepper">
               <button type="button" class="stepper-btn" id="titleSizeMinus" aria-label="Decrease title size">−</button>
-              <input id="titleSize" type="number" min="20" max="200" step="1" value="200">
+              <input id="titleSize" type="number" min="20" max="200" step="1" value="58">
               <button type="button" class="stepper-btn" id="titleSizePlus" aria-label="Increase title size">+</button>
             </div>
           </label>
@@ -183,6 +179,16 @@
               <option value="left">Left</option>
               <option value="right">Right</option>
             </select>
+          </label>
+
+          <!-- Uppercase + Fit to area — two-column checkbox row -->
+          <label class="checkbox-label">
+            <input type="checkbox" id="titleUppercase">
+            Uppercase
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="titleFit">
+            Fit title to area
           </label>
 
         </div>
