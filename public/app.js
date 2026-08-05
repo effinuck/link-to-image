@@ -38,7 +38,7 @@ const defaultData = {
 };
 
 const defaultControls = {
-  titleSize:  "40",
+  titleSize:  "200",
   background: "#000000",
   text:       "#ffffff",
   trim:       "#FFCC00",
@@ -220,26 +220,24 @@ async function drawCard(data = currentData) {
   const titleAreaBottom = bodyTop + lowerHeight - padding;
   const titleAreaHeight = titleAreaBottom - titleTop;
 
-  // Start from the user's chosen size, then grow to fill available space
-  const userSize = Number(controls.titleSize.value) || Math.round(width * 0.069);
+  // Title Size = maximum font size cap. Text grows to fill the area but never exceeds the cap.
+  const sizeMax = Number(controls.titleSize.value) || 200;
 
-  // Find the largest font size where all lines fit within the available height
   function calcLines(size) {
     return wrapText(ctx, rawTitleFinal, titleMaxWidth, size, 20, safeTitleFont, titleWeight);
   }
 
-  // Grow from userSize up until text overflows, then step back one
-  let bestSize = userSize;
-  for (let s = userSize; s <= 200; s += 1) {
+  // Grow from min upward until text overflows height or hits the cap
+  let bestSize = 20;
+  for (let s = 20; s <= sizeMax; s += 1) {
     const { lines } = calcLines(s);
-    const lh = Math.round(s * 1); // line-height: 1
-    const usedHeight = lines.length * lh;
+    const usedHeight = lines.length * Math.round(s * 1);
     if (usedHeight > titleAreaHeight) break;
     bestSize = s;
   }
 
   const { lines, size } = calcLines(bestSize);
-  const lineHeight      = Math.round(size * 1); // line-height: 1
+  const lineHeight      = Math.round(size * 1);
   const maxLines        = Math.max(1, Math.floor(titleAreaHeight / lineHeight));
   const visibleLines    = lines.slice(0, maxLines);
 
