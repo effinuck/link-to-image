@@ -213,9 +213,15 @@ async function drawCard(data = currentData) {
   ctx.fillStyle = controls.trim.value;
   ctx.fillText(displayUrl, sourceX, sourceBaseline);
 
-  // Apply uppercase if checkbox checked
-  const isUppercase  = controls.titleUppercase?.checked ?? false;
-  const rawTitleFinal = isUppercase ? rawTitle.toUpperCase() : rawTitle;
+  // Apply uppercase if checkbox checked; normalise smart quotes/apostrophes
+  // Anton SC lacks curly quote glyphs — replace with ASCII equivalents
+  const isUppercase   = controls.titleUppercase?.checked ?? false;
+  const normalised    = rawTitle
+    .replace(/[\u201C\u201D\u201E\u201F\u275D\u275E]/g, '"')  // curly double quotes → "
+    .replace(/[\u2018\u2019\u201A\u201B\u275B\u275C]/g, "'")  // curly single quotes / apostrophes → '
+    .replace(/[\u2032\u2035]/g, "'")                           // prime / back-prime → '
+    .replace(/[\u2033\u2036]/g, '"');                          // double prime → "
+  const rawTitleFinal = isUppercase ? normalised.toUpperCase() : normalised;
   const titleTop         = sourceTop + sourceRowHeight + gap;
   const titleAreaBottom  = bodyTop + lowerHeight - padding;
   const { lines, size }  = wrapText(ctx, rawTitleFinal, titleMaxWidth, titleBase, 20, safeTitleFont, titleWeight);
