@@ -16,7 +16,7 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Anton+SC&family=Poppins:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Saira+Condensed:wght@700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/styles.css">
   </head>
   <body>
@@ -118,7 +118,7 @@
             <input type="hidden" id="textColor" value="#ffffff">
           </label>
 
-          <!-- Trim/Source Colour + Uppercase — two columns -->
+          <!-- Trim/Source Colour + Title options — two columns -->
           <label>
             Trim/Source Colour
             <div class="colour-select" id="trimColourSelect" data-target="trimColor" data-value="#FFCC00">
@@ -144,10 +144,19 @@
             <input type="hidden" id="trimColor" value="#FFCC00">
           </label>
 
-          <label class="checkbox-label align-end">
-            <input type="checkbox" id="titleUppercase">
-            Uppercase title
-          </label>
+          <div class="title-options">
+            <label>
+              Title Weight
+              <select id="titleWeight">
+                <option value="700">Bold</option>
+                <option value="800">Extra Bold</option>
+              </select>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="titleUppercase">
+              Uppercase
+            </label>
+          </div>
 
           <label class="span-full">
             Logo Image

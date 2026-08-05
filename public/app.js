@@ -13,7 +13,7 @@ const downloadButton     = document.querySelector("#downloadButton");
 const statusEl           = document.querySelector("#status");
 const canvas             = document.querySelector("#previewCanvas");
 const ctx                = canvas.getContext("2d");
-const fontStack          = "Poppins, Arial, sans-serif";
+const fontStack          = "Inter, system-ui, sans-serif";
 
 const controls = {
   titleSize:    document.querySelector("#titleSize"),
@@ -23,7 +23,8 @@ const controls = {
   trim:         document.querySelector("#trimColor"),
   logoUpload:   document.querySelector("#logoUpload"),
   bgImageUpload:document.querySelector("#bgImageUpload"),
-  titleFont:    null, // Anton SC is the fixed title font — no selector needed
+  titleFont:      null, // Saira Condensed is the fixed title font
+  titleWeight:    document.querySelector("#titleWeight"),
   titleUppercase: document.querySelector("#titleUppercase"),
 };
 
@@ -195,12 +196,12 @@ async function drawCard(data = currentData) {
     ctx.fillRect(0, bodyTop, width, lowerHeight);
   }
 
-  // ── Source / logo row — Anton SC is the fixed title font
-  const safeTitleFont = `"Anton SC", Arial, sans-serif`;
-  const titleWeight   = "400"; // Anton SC is a single-weight display font
+  // ── Source / logo row — Saira Condensed is the fixed title font
+  const safeTitleFont = `"Saira Condensed", Arial, sans-serif`;
+  const titleWeight   = controls.titleWeight?.value || "700";
 
-  // Ensure Anton SC is fully loaded before drawing
-  try { await document.fonts.load(`400 60px "Anton SC"`); } catch {}
+  // Ensure Saira Condensed is fully loaded before drawing
+  try { await document.fonts.load(`${titleWeight} 60px "Saira Condensed"`); } catch {}
 
   const displayUrl  = data.displayUrl || "";
   const sourceTop   = bodyTop + gap;
@@ -213,15 +214,9 @@ async function drawCard(data = currentData) {
   ctx.fillStyle = controls.trim.value;
   ctx.fillText(displayUrl, sourceX, sourceBaseline);
 
-  // Apply uppercase if checkbox checked; normalise smart quotes/apostrophes
-  // Anton SC lacks curly quote glyphs — replace with ASCII equivalents
+  // Apply uppercase if checkbox checked
   const isUppercase   = controls.titleUppercase?.checked ?? false;
-  const normalised    = rawTitle
-    .replace(/[\u201C\u201D\u201E\u201F\u275D\u275E]/g, '"')  // curly double quotes → "
-    .replace(/[\u2018\u2019\u201A\u201B\u275B\u275C]/g, "'")  // curly single quotes / apostrophes → '
-    .replace(/[\u2032\u2035]/g, "'")                           // prime / back-prime → '
-    .replace(/[\u2033\u2036]/g, '"');                          // double prime → "
-  const rawTitleFinal = isUppercase ? normalised.toUpperCase() : normalised;
+  const rawTitleFinal = isUppercase ? rawTitle.toUpperCase() : rawTitle;
   const titleTop         = sourceTop + sourceRowHeight + gap;
   const titleAreaBottom  = bodyTop + lowerHeight - padding;
   const { lines, size }  = wrapText(ctx, rawTitleFinal, titleMaxWidth, titleBase, 20, safeTitleFont, titleWeight);
@@ -231,7 +226,7 @@ async function drawCard(data = currentData) {
 
   ctx.fillStyle     = controls.text.value;
   ctx.font          = `${titleWeight} ${size}px ${safeTitleFont}`;
-  ctx.letterSpacing = "1px";
+  ctx.letterSpacing = "0px";
   let y = titleTop + size;
   for (const line of visibleLines) {
     ctx.fillText(line, padding, y);
@@ -311,6 +306,7 @@ resetButton.addEventListener("click", async () => {
   manualTitle.value  = "";
   hideAutoEditFields();
   controls.titleSize.value  = defaultControls.titleSize;
+  if (controls.titleWeight)   controls.titleWeight.value   = "700";
   if (controls.titleUppercase) controls.titleUppercase.checked = false;
   // Reset colour-select dropdowns
   resetColourSelect("bgColourSelect",   defaultControls.background, "Black");
@@ -398,7 +394,7 @@ autoTitle.addEventListener("input", () => {
 });
 
 // ── Control listeners ─────────────────────────────────────
-for (const control of [controls.titleSize, controls.background, controls.text, controls.trim, controls.imageAlign]) {
+for (const control of [controls.titleSize, controls.background, controls.text, controls.trim, controls.imageAlign, controls.titleWeight]) {
   control.addEventListener("input", () => drawCard(currentData));
 }
 controls.titleUppercase?.addEventListener("change", () => drawCard(currentData));
