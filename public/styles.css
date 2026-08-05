@@ -406,15 +406,15 @@ canvas {
 
 /* ── Checkbox label ──────────────────────────────────────── */
 .checkbox-label {
-  display: flex;
+  display: inline-flex;
   flex-direction: row;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   font-size: 14px;
   font-weight: 700;
   color: #c8ced8;
   cursor: pointer;
-  padding-top: 8px;
+  padding-top: 6px;
 }
 
 .checkbox-label input[type="checkbox"] {
@@ -428,6 +428,7 @@ canvas {
   accent-color: #f4f5fb;
   cursor: pointer;
   padding: 0;
+  margin: 0;
 }
 
 /* ── Title options (weight + uppercase) ─────────────────── */

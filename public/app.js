@@ -217,7 +217,7 @@ async function drawCard(data = currentData) {
   // Apply uppercase if checkbox checked
   const isUppercase   = controls.titleUppercase?.checked ?? false;
   const rawTitleFinal = isUppercase ? rawTitle.toUpperCase() : rawTitle;
-  const titleTop        = sourceTop + sourceRowHeight + gap;
+  const titleTop        = sourceTop + sourceRowHeight + Math.round(gap * 0.4);
   const titleAreaBottom = bodyTop + lowerHeight - padding;
   const titleAreaHeight = titleAreaBottom - titleTop;
 
