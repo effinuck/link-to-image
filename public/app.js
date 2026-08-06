@@ -27,6 +27,7 @@ const controls = {
   titleWeight:    document.querySelector("#titleWeight"),
   titleUppercase: document.querySelector("#titleUppercase"),
   titleFit:       document.querySelector("#titleFit"),
+  textAlign:      document.querySelector("#textAlign"),
 };
 
 let uploadedLogoSrc    = "";
@@ -210,9 +211,13 @@ async function drawCard(data = currentData) {
   // Source line-height: 1 (single line, baseline is top + labelSize)
   const sourceBaseline = hasLogo ? sourceTop + Math.round(logoSize * 0.72) : sourceTop + labelSize;
 
+  const activeTextAlign = controls.textAlign?.value || "left";
+  ctx.textAlign = activeTextAlign;
+  const textX = activeTextAlign === "center" ? width / 2 : sourceX;
+
   ctx.font      = `400 ${labelSize}px ${fontStack}`;
   ctx.fillStyle = controls.trim.value;
-  ctx.fillText(displayUrl, sourceX, sourceBaseline);
+  ctx.fillText(displayUrl, textX, sourceBaseline);
 
   // Apply uppercase if checkbox checked
   const isUppercase   = controls.titleUppercase?.checked ?? false;
@@ -248,13 +253,16 @@ async function drawCard(data = currentData) {
 
   ctx.fillStyle     = controls.text.value;
   ctx.font          = `${titleWeight} ${size}px ${safeTitleFont}`;
+  ctx.textAlign     = activeTextAlign;
   ctx.letterSpacing = "0px";
+  const titleX = activeTextAlign === "center" ? width / 2 : padding;
   let y = titleTop + size;
   for (const line of visibleLines) {
-    ctx.fillText(line, padding, y);
+    ctx.fillText(line, titleX, y);
     y += lineHeight;
   }
-  ctx.letterSpacing = "0px"; // reset after title
+  ctx.letterSpacing = "0px";
+  ctx.textAlign     = "left"; // reset
 
   if (lines.length > visibleLines.length) {
     setStatus("⚠️ Title is cropped — reduce the font size to fit.");
@@ -328,9 +336,10 @@ resetButton.addEventListener("click", async () => {
   manualTitle.value  = "";
   hideAutoEditFields();
   controls.titleSize.value  = defaultControls.titleSize;
-  if (controls.titleWeight)    controls.titleWeight.value      = "700";
+  if (controls.titleWeight)    controls.titleWeight.value      = "800";
   if (controls.titleUppercase) controls.titleUppercase.checked = false;
   if (controls.titleFit)       controls.titleFit.checked       = false;
+  if (controls.textAlign)      controls.textAlign.value        = "left";
   // Reset colour-select dropdowns
   resetColourSelect("bgColourSelect",   defaultControls.background, "Black");
   resetColourSelect("textColourSelect", defaultControls.text,       "White");
@@ -417,7 +426,7 @@ autoTitle.addEventListener("input", () => {
 });
 
 // ── Control listeners ─────────────────────────────────────
-for (const control of [controls.titleSize, controls.background, controls.text, controls.trim, controls.imageAlign, controls.titleWeight]) {
+for (const control of [controls.titleSize, controls.background, controls.text, controls.trim, controls.imageAlign, controls.titleWeight, controls.textAlign]) {
   control.addEventListener("input", () => drawCard(currentData));
 }
 controls.titleUppercase?.addEventListener("change", () => drawCard(currentData));
