@@ -24,7 +24,6 @@ const controls = {
   logoUpload:   document.querySelector("#logoUpload"),
   bgImageUpload:document.querySelector("#bgImageUpload"),
   titleFont:      null,
-  titleWeight:    document.querySelector("#titleWeight"),
   titleUppercase: document.querySelector("#titleUppercase"),
   titleFit:       document.querySelector("#titleFit"),
   textAlign:      document.querySelector("#textAlign"),
@@ -199,7 +198,7 @@ async function drawCard(data = currentData) {
 
   // ── Source / logo row — Saira Condensed is the fixed title font
   const safeTitleFont = `"Saira Condensed", Arial, sans-serif`;
-  const titleWeight   = controls.titleWeight?.value || "700";
+  const titleWeight   = "800";
 
   // Ensure Saira Condensed is fully loaded before drawing
   try { await document.fonts.load(`${titleWeight} 60px "Saira Condensed"`); } catch {}
@@ -336,7 +335,6 @@ resetButton.addEventListener("click", async () => {
   manualTitle.value  = "";
   hideAutoEditFields();
   controls.titleSize.value  = defaultControls.titleSize;
-  if (controls.titleWeight)    controls.titleWeight.value      = "800";
   if (controls.titleUppercase) controls.titleUppercase.checked = false;
   if (controls.titleFit)       controls.titleFit.checked       = false;
   if (controls.textAlign)      controls.textAlign.value        = "left";
@@ -426,7 +424,7 @@ autoTitle.addEventListener("input", () => {
 });
 
 // ── Control listeners ─────────────────────────────────────
-for (const control of [controls.titleSize, controls.background, controls.text, controls.trim, controls.imageAlign, controls.titleWeight, controls.textAlign]) {
+for (const control of [controls.titleSize, controls.background, controls.text, controls.trim, controls.imageAlign, controls.textAlign]) {
   control.addEventListener("input", () => drawCard(currentData));
 }
 controls.titleUppercase?.addEventListener("change", () => drawCard(currentData));
