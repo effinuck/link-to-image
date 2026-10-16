@@ -45,7 +45,7 @@ const controls = {
   titleSize:      document.querySelector("#titleSize"),
   imageAlign:     document.querySelector("#imageAlign"),
   textAlign:      document.querySelector("#textAlign"),
-  titleUppercase: document.querySelector("#titleUppercase"),
+  titleCase:      document.querySelector("#titleCase"),
   titleFit:       document.querySelector("#titleFit"),
   logoUpload:     document.querySelector("#logoUpload"),
   bgImageUpload:  document.querySelector("#bgImageUpload"),
@@ -245,7 +245,7 @@ async function drawCard(data = currentData) {
   const titleBase     = Number(controls.titleSize.value) || Math.round(width * 0.069);
   const titleMaxWidth = width - padding * 2;
   let   rawTitle      = decodeHtmlEntities(data.title || "Untitled page");
-  if (controls.titleUppercase?.checked) rawTitle = rawTitle.toUpperCase();
+  if (!controls.titleCase || controls.titleCase.value !== "lower") rawTitle = rawTitle.toUpperCase();
 
   const logoSize       = Math.round(width * 0.059);
   const labelSize      = Math.round(width * 0.043);
@@ -500,11 +500,9 @@ telegramSource.addEventListener("input", () => {
 });
 
 // ─── Settings controls ────────────────────────────────────────────────────────
-for (const control of [controls.titleSize, controls.imageAlign, controls.textAlign]) {
+for (const control of [controls.titleSize, controls.imageAlign, controls.textAlign, controls.titleCase]) {
   control?.addEventListener("input", () => drawCard(currentData));
 }
-
-controls.titleUppercase?.addEventListener("change", () => drawCard(currentData));
 
 controls.logoUpload.addEventListener("change", () => {
   const file = controls.logoUpload.files?.[0];
@@ -558,7 +556,7 @@ resetButton.addEventListener("click", async () => {
   telegramImageUrl = "";
   telegramFields.hidden = true;
   controls.titleSize.value = "58";
-  controls.titleUppercase.checked = false;
+  controls.titleCase.value = "upper";
   controls.textAlign.value = "left";
   controls.imageAlign.value = "center";
   controls.logoUpload.value = "";

@@ -325,7 +325,9 @@ textarea {
 /* ── Title options ── */
 .title-options {
   display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
+  grid-column: 1 / -1;
 }
 
 .title-options label {
