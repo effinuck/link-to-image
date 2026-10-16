@@ -1,94 +1,138 @@
-const form               = document.querySelector("#urlForm");
-const urlInput           = document.querySelector("#urlInput");
-const manualForm         = document.querySelector("#manualForm");
-const manualImageUpload  = document.querySelector("#manualImageUpload");
-const manualSource       = document.querySelector("#manualSource");
-const manualTitle        = document.querySelector("#manualTitle");
-const tabAuto            = document.querySelector("#tabAuto");
-const tabManual          = document.querySelector("#tabManual");
-const autoPanel          = document.querySelector("#autoPanel");
-const manualPanel        = document.querySelector("#manualPanel");
-const resetButton        = document.querySelector("#resetButton");
-const downloadButton     = document.querySelector("#downloadButton");
-const statusEl           = document.querySelector("#status");
-const canvas             = document.querySelector("#previewCanvas");
-const ctx                = canvas.getContext("2d");
-const fontStack          = "Inter, system-ui, sans-serif";
+const form = document.querySelector("#urlForm");
+const urlInput = document.querySelector("#urlInput");
+const manualForm = document.querySelector("#manualForm");
+const manualImageUpload = document.querySelector("#manualImageUpload");
+const manualSource = document.querySelector("#manualSource");
+const manualTitle = document.querySelector("#manualTitle");
+const tabAuto = document.querySelector("#tabAuto");
+const tabManual = document.querySelector("#tabManual");
+const tabTelegram = document.querySelector("#tabTelegram");
+const autoPanel = document.querySelector("#autoPanel");
+const manualPanel = document.querySelector("#manualPanel");
+const telegramPanel = document.querySelector("#telegramPanel");
+const telegramSelect = document.querySelector("#telegramSelect");
+const telegramRefresh = document.querySelector("#telegramRefresh");
+const telegramTitleInput = document.querySelector("#telegramTitle");
+const telegramSourceInput = document.querySelector("#telegramSource");
+const telegramGenerate = document.querySelector("#telegramGenerate");
+const resetButton = document.querySelector("#resetButton");
+const downloadButton = document.querySelector("#downloadButton");
+const statusEl = document.querySelector("#status");
+const canvas = document.querySelector("#previewCanvas");
+const ctx = canvas.getContext("2d");
+const fontStack = "Poppins, Arial, sans-serif";
 
 const controls = {
-  titleSize:    document.querySelector("#titleSize"),
-  imageAlign:   document.querySelector("#imageAlign"),
-  background:   document.querySelector("#backgroundColor"),
-  text:         document.querySelector("#textColor"),
-  trim:         document.querySelector("#trimColor"),
-  logoUpload:   document.querySelector("#logoUpload"),
-  bgImageUpload:document.querySelector("#bgImageUpload"),
-  titleFont:      null,
-  titleUppercase: document.querySelector("#titleUppercase"),
-  titleFit:       document.querySelector("#titleFit"),
-  textAlign:      document.querySelector("#textAlign"),
+  titleSize: document.querySelector("#titleSize"),
+  imageAlign: document.querySelector("#imageAlign"),
+  background: document.querySelector("#backgroundColor"),
+  text: document.querySelector("#textColor"),
+  trim: document.querySelector("#trimColor"),
+  logoUpload: document.querySelector("#logoUpload"),
+  bgImageUpload: document.querySelector("#bgImageUpload")
 };
 
-let uploadedLogoSrc    = "";
+let uploadedLogoSrc = "";
 let uploadedBgImageSrc = "";
 
 const defaultData = {
   displayUrl: "sitename.com",
   title: "Title of the webpage or article will appear here",
-  image: "https://images.unsplash.com/photo-1558637845-c8b7ead71a3e?q=80&w=1632&auto=format&fit=crop"
+  image: "https://images.unsplash.com/photo-1558637845-c8b7ead71a3e?q=80&w=1632&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
 };
 
 const defaultControls = {
-  titleSize:  "58",
+  titleSize: "58",
   background: "#000000",
-  text:       "#ffffff",
-  trim:       "#FFCC00",
+  text: "#f4f5fb",
+  trim: "#f0d13a"
 };
 
 let currentData = { ...defaultData };
 
-function setStatus(message) { statusEl.textContent = message; }
+function setStatus(message) {
+  statusEl.textContent = message;
+}
 
-// ── Text helpers ──────────────────────────────────────────
-function fitText(ctx, text, maxWidth, baseSize, minSize, font, weight = "700") {
+function fitText(ctx, text, maxWidth, baseSize, minSize) {
   let size = baseSize;
-  ctx.font = `${weight} ${size}px ${font}`;
+  ctx.font = `700 ${size}px ${fontStack}`;
   while (size > minSize && ctx.measureText(text).width > maxWidth) {
     size -= 1;
-    ctx.font = `${weight} ${size}px ${font}`;
+    ctx.font = `700 ${size}px ${fontStack}`;
   }
   return size;
 }
 
-function wrapText(ctx, text, maxWidth, baseSize, minSize, font, weight = "700") {
+function wrapText(ctx, text, maxWidth, baseSize, minSize) {
   const words = text.split(/\s+/).filter(Boolean);
   const lines = [];
   let line = "";
-  let size  = baseSize;
+  let size = baseSize;
 
   for (const word of words) {
     const testLine = line ? `${line} ${word}` : word;
-    ctx.font = `${weight} ${size}px ${font}`;
+    ctx.font = `700 ${size}px ${fontStack}`;
+
     if (ctx.measureText(testLine).width <= maxWidth) {
       line = testLine;
       continue;
     }
+
     if (line) lines.push(line);
+
     if (ctx.measureText(word).width > maxWidth) {
-      size = fitText(ctx, word, maxWidth, size, minSize, font, weight);
+      size = fitText(ctx, word, maxWidth, size, minSize);
     }
+
     line = word;
   }
+
   if (line) lines.push(line);
   return { lines, size };
 }
 
-// ── Image helpers ─────────────────────────────────────────
+function drawCoverImage(image, x, y, width, height) {
+  const sourceRatio = image.naturalWidth / image.naturalHeight;
+  const targetRatio = width / height;
+  let sx = 0;
+  let sy = 0;
+  let sw = image.naturalWidth;
+  let sh = image.naturalHeight;
+
+  if (sourceRatio > targetRatio) {
+    // Image is wider than target: crop sides equally (centre crop)
+    sw = image.naturalHeight * targetRatio;
+    sx = (image.naturalWidth - sw) / 2;
+  } else {
+    // Image is taller than target: crop from bottom only (keep top)
+    sh = image.naturalWidth / targetRatio;
+    sy = 0;
+  }
+
+  ctx.drawImage(image, sx, sy, sw, sh, x, y, width, height);
+}
+
+function drawContainedImage(image, x, y, width, height) {
+  const sourceRatio = image.naturalWidth / image.naturalHeight;
+  const targetRatio = width / height;
+  let drawWidth = width;
+  let drawHeight = height;
+
+  if (sourceRatio > targetRatio) {
+    drawHeight = width / sourceRatio;
+  } else {
+    drawWidth = height * sourceRatio;
+  }
+
+  ctx.drawImage(image, x + (width - drawWidth) / 2, y + (height - drawHeight) / 2, drawWidth, drawHeight);
+}
+
 function loadImage(src) {
   return new Promise((resolve, reject) => {
     const image = new Image();
     image.crossOrigin = "anonymous";
-    image.onload  = () => resolve(image);
+    image.onload = () => resolve(image);
     image.onerror = reject;
     image.src = src;
   });
@@ -96,19 +140,16 @@ function loadImage(src) {
 
 function proxiedImageUrl(src) {
   if (!src) return "";
-  if (src.startsWith("data:") || src.startsWith(location.origin)) return src;
+  if (src.startsWith("data:") || src.startsWith("/") || src.startsWith(location.origin)) return src;
   return `/api/image?url=${encodeURIComponent(src)}`;
 }
 
 async function drawLogo(data, x, y, size) {
   if (!uploadedLogoSrc) return false;
+
   try {
     const logo = await loadImage(uploadedLogoSrc);
-    const sr   = logo.naturalWidth / logo.naturalHeight;
-    const tr   = size / size;
-    let dw = size, dh = size;
-    if (sr > tr) { dh = size / sr; } else { dw = size * sr; }
-    ctx.drawImage(logo, x, y + (size - dh) / 2, dw, dh);
+    drawContainedImage(logo, x, y, size, size);
     return true;
   } catch {
     uploadedLogoSrc = "";
@@ -119,51 +160,61 @@ async function drawLogo(data, x, y, size) {
 function decodeHtmlEntities(str) {
   return str
     .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
-    .replace(/&#(\d+);/g,            (_, dec) => String.fromCharCode(Number(dec)))
-    .replace(/&amp;/g,  "&").replace(/&lt;/g,   "<").replace(/&gt;/g,    ">")
-    .replace(/&quot;/g, '"').replace(/&#39;/g,   "'").replace(/&apos;/g,  "'")
-    .replace(/&nbsp;/g, " ").replace(/&ndash;/g, "–").replace(/&mdash;/g, "—")
-    .replace(/&lsquo;/g,"\u2018").replace(/&rsquo;/g,"\u2019")
-    .replace(/&ldquo;/g,"\u201C").replace(/&rdquo;/g,"\u201D");
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(Number(dec)))
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&ndash;/g, "–")
+    .replace(/&mdash;/g, "—")
+    .replace(/&lsquo;/g, "\u2018")
+    .replace(/&rsquo;/g, "\u2019")
+    .replace(/&ldquo;/g, "\u201C")
+    .replace(/&rdquo;/g, "\u201D");
 }
 
-// ── Draw card ─────────────────────────────────────────────
 async function drawCard(data = currentData) {
   currentData = data;
 
-  const width       = 900;
-  const totalHeight = Math.round(width * 5 / 4);
-  const imageHeight = Math.round(totalHeight / 2);
-  const trimHeight  = Math.max(7, Math.round(width * 0.014));
-  const padding     = Math.round(width * 0.062);
-  const gap         = Math.round(width * 0.042);
+  const width = 900;
+  const totalHeight = Math.round(width * 5 / 4); // overall card is 4:5
+  const imageHeight = Math.round(totalHeight / 2); // top photo fills exactly half the card
+  const trimHeight = Math.max(7, Math.round(width * 0.014));
+  const padding = Math.round(width * 0.062);
+  const gap = Math.round(width * 0.042);
   const lowerHeight = totalHeight - imageHeight - trimHeight;
 
-  const titleMaxWidth= width - padding * 2;
-  const rawTitle     = decodeHtmlEntities(data.title || "Untitled page");
-  const logoSize     = Math.round(width * 0.059);
-  const labelSize    = Math.round(width * 0.043);
+  const titleBase = Number(controls.titleSize.value) || Math.round(width * 0.069);
+  const titleMaxWidth = width - padding * 2;
+  const rawTitle = decodeHtmlEntities(data.title || "Untitled page");
+  const logoSize = Math.round(width * 0.059);
+  const labelSize = Math.round(width * 0.043);
   const sourceRowHeight = uploadedLogoSrc ? logoSize : labelSize;
 
-  canvas.width  = width;
+  canvas.width = width;
   canvas.height = totalHeight;
 
   ctx.fillStyle = controls.background.value;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // ── Featured image
   try {
-    const image  = await loadImage(proxiedImageUrl(data.image));
-    const scale  = imageHeight / image.naturalHeight;
-    const drawW  = image.naturalWidth * scale;
-    const drawH  = imageHeight;
+    const image = await loadImage(proxiedImageUrl(data.image));
+    const scale = imageHeight / image.naturalHeight;
+    const drawW = image.naturalWidth * scale;
+    const drawH = imageHeight;
+
     if (drawW >= width) {
+      // Image is wide enough to fill — fit to height, crop left/right per alignment
       const align = controls.imageAlign.value;
       const drawX = align === "left" ? 0 : align === "right" ? width - drawW : (width - drawW) / 2;
       ctx.drawImage(image, drawX, 0, drawW, drawH);
     } else {
+      // Image is too narrow — fit to width instead, crop top/bottom from top
       const scaleW = width / image.naturalWidth;
-      const fitH   = image.naturalHeight * scaleW;
+      const fitH = image.naturalHeight * scaleW;
       ctx.drawImage(image, 0, 0, width, fitH);
     }
   } catch {
@@ -174,19 +225,21 @@ async function drawCard(data = currentData) {
     ctx.fillText("No featured image found", padding, imageHeight / 2);
   }
 
-  // ── Trim bar
   ctx.fillStyle = controls.trim.value;
   ctx.fillRect(0, imageHeight, width, trimHeight);
 
   const bodyTop = imageHeight + trimHeight;
 
-  // ── Text background / bg image
+  // Draw background image behind text area if uploaded
   if (uploadedBgImageSrc) {
     try {
       const bgImage = await loadImage(uploadedBgImageSrc);
-      const scale   = lowerHeight / bgImage.naturalHeight;
-      const drawW   = bgImage.naturalWidth * scale;
-      ctx.drawImage(bgImage, width - drawW, bodyTop, drawW, lowerHeight);
+      // Scale to fill height, maintain aspect ratio, align to right edge
+      const scale = lowerHeight / bgImage.naturalHeight;
+      const drawW = bgImage.naturalWidth * scale;
+      const drawH = lowerHeight;
+      const drawX = width - drawW; // right-aligned
+      ctx.drawImage(bgImage, drawX, bodyTop, drawW, drawH);
     } catch {
       ctx.fillStyle = controls.background.value;
       ctx.fillRect(0, bodyTop, width, lowerHeight);
@@ -196,106 +249,76 @@ async function drawCard(data = currentData) {
     ctx.fillRect(0, bodyTop, width, lowerHeight);
   }
 
-  // ── Source / logo row — Saira Condensed is the fixed title font
-  const safeTitleFont = `"Saira Condensed", Arial, sans-serif`;
-  const titleWeight   = "800";
+  const displayUrl = data.displayUrl || "";
+  const sourceTop = bodyTop + gap;
+  const hasLogo = await drawLogo(data, padding, sourceTop, logoSize);
+  const sourceX = hasLogo ? padding + logoSize + Math.round(width * 0.022) : padding;
+  const sourceBaseline = hasLogo
+    ? sourceTop + Math.round(logoSize * 0.72)
+    : sourceTop + labelSize;
 
-  // Ensure Saira Condensed is fully loaded before drawing
-  try { await document.fonts.load(`${titleWeight} 60px "Saira Condensed"`); } catch {}
-
-  const displayUrl  = data.displayUrl || "";
-  const sourceTop   = bodyTop + gap;
-  const hasLogo     = await drawLogo(data, padding, sourceTop, logoSize);
-  const sourceX     = hasLogo ? padding + logoSize + Math.round(width * 0.022) : padding;
-  // Source line-height: 1 (single line, baseline is top + labelSize)
-  const sourceBaseline = hasLogo ? sourceTop + Math.round(logoSize * 0.72) : sourceTop + labelSize;
-
-  const activeTextAlign = controls.textAlign?.value || "left";
-  ctx.textAlign = activeTextAlign;
-  const textX = activeTextAlign === "center" ? width / 2 : sourceX;
-
-  ctx.font      = `400 ${labelSize}px ${fontStack}`;
+  ctx.font = `400 ${labelSize}px ${fontStack}`;
   ctx.fillStyle = controls.trim.value;
-  ctx.fillText(displayUrl, textX, sourceBaseline);
+  ctx.fillText(displayUrl, sourceX, sourceBaseline);
 
-  // Apply uppercase if checkbox checked
-  const isUppercase   = controls.titleUppercase?.checked ?? false;
-  const rawTitleFinal = isUppercase ? rawTitle.toUpperCase() : rawTitle;
-  const titleTop        = sourceTop + sourceRowHeight + Math.round(gap * 0.4);
+  const titleTop = sourceTop + sourceRowHeight + gap;
   const titleAreaBottom = bodyTop + lowerHeight - padding;
-  const titleAreaHeight = titleAreaBottom - titleTop;
 
-  const userSize  = Number(controls.titleSize.value) || 58;
-  const isFit     = controls.titleFit?.checked ?? false;
+  // Measure and wrap title within fixed panel
+  const { lines, size } = wrapText(ctx, rawTitle, titleMaxWidth, titleBase, 20);
+  const lineHeight = Math.round(size * 1.2);
 
-  function calcLines(size) {
-    return wrapText(ctx, rawTitleFinal, titleMaxWidth, size, 20, safeTitleFont, titleWeight);
-  }
+  // Only draw lines that fit within the fixed text panel
+  const maxLines = Math.max(1, Math.floor((titleAreaBottom - titleTop) / lineHeight));
+  const visibleLines = lines.slice(0, maxLines);
+  const isClipped = lines.length > visibleLines.length;
 
-  let bestSize;
-  if (isFit) {
-    // Grow from min up to userSize until text overflows height
-    bestSize = 20;
-    for (let s = 20; s <= userSize; s += 1) {
-      const { lines } = calcLines(s);
-      if (lines.length * Math.round(s * 1) > titleAreaHeight) break;
-      bestSize = s;
-    }
-  } else {
-    bestSize = userSize;
-  }
-
-  const { lines, size } = calcLines(bestSize);
-  const lineHeight      = Math.round(size * 1);
-  const maxLines        = Math.max(1, Math.floor(titleAreaHeight / lineHeight));
-  const visibleLines    = lines.slice(0, maxLines);
-
-  ctx.fillStyle     = controls.text.value;
-  ctx.font          = `${titleWeight} ${size}px ${safeTitleFont}`;
-  ctx.textAlign     = activeTextAlign;
-  ctx.letterSpacing = "0px";
-  const titleX = activeTextAlign === "center" ? width / 2 : padding;
+  ctx.fillStyle = controls.text.value;
+  ctx.font = `700 ${size}px ${fontStack}`;
   let y = titleTop + size;
   for (const line of visibleLines) {
-    ctx.fillText(line, titleX, y);
+    ctx.fillText(line, padding, y);
     y += lineHeight;
   }
-  ctx.letterSpacing = "0px";
-  ctx.textAlign     = "left"; // reset
 
-  if (lines.length > visibleLines.length) {
+  if (isClipped) {
     setStatus("⚠️ Title is cropped — reduce the font size to fit.");
   }
 }
 
-// ── API ───────────────────────────────────────────────────
 async function fetchMetadata(url) {
   const response = await fetch(`/api/metadata?url=${encodeURIComponent(url)}`);
-  const body     = await response.json();
+  const body = await response.json();
   if (!response.ok) throw new Error(body.error || "Could not generate the preview.");
   return body;
 }
 
-// ── Tabs ──────────────────────────────────────────────────
 function setMode(mode) {
-  const isManual = mode === "manual";
-  tabAuto.classList.toggle("active", !isManual);
-  tabAuto.setAttribute("aria-selected", String(!isManual));
-  tabManual.classList.toggle("active", isManual);
-  tabManual.setAttribute("aria-selected", String(isManual));
-  autoPanel.hidden  = isManual;
-  manualPanel.hidden = !isManual;
+  tabAuto.classList.toggle("active", mode === "auto");
+  tabAuto.setAttribute("aria-selected", String(mode === "auto"));
+  tabManual.classList.toggle("active", mode === "manual");
+  tabManual.setAttribute("aria-selected", String(mode === "manual"));
+  tabTelegram.classList.toggle("active", mode === "telegram");
+  tabTelegram.setAttribute("aria-selected", String(mode === "telegram"));
+  autoPanel.hidden = mode !== "auto";
+  manualPanel.hidden = mode !== "manual";
+  telegramPanel.hidden = mode !== "telegram";
+
+  if (mode === "telegram" && telegramSelect.options.length <= 1 && telegramSelect.options[0]?.value === "") {
+    loadTelegramPosts();
+  }
 }
 
-tabAuto.addEventListener("click",   () => setMode("auto"));
+tabAuto.addEventListener("click", () => setMode("auto"));
 tabManual.addEventListener("click", () => setMode("manual"));
+tabTelegram.addEventListener("click", () => setMode("telegram"));
 
-// ── Manual form ───────────────────────────────────────────
+// Manual form submit
 manualForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const source = manualSource.value.trim() || "source.com";
-  const title  = manualTitle.value.trim()  || "Untitled";
-  const file   = manualImageUpload.files?.[0];
+  const title = manualTitle.value.trim() || "Untitled";
+  const file = manualImageUpload.files?.[0];
 
   const getImageSrc = () => new Promise((resolve) => {
     if (!file) { resolve(defaultData.image); return; }
@@ -310,135 +333,240 @@ manualForm.addEventListener("submit", async (event) => {
   setStatus("Card ready.");
 });
 
-// ── Auto form ─────────────────────────────────────────────
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   setStatus("Reading the page...");
-  hideAutoEditFields();
 
   try {
     const metadata = await fetchMetadata(urlInput.value);
     setStatus("Drawing the card...");
     await drawCard(metadata);
-    showAutoEditFields(metadata);
-    setStatus("Card ready — edit title or source above if needed.");
+    setStatus("Card ready.");
   } catch (error) {
     setStatus(error instanceof Error ? error.message : "Something went wrong.");
   }
 });
 
-// ── Reset ─────────────────────────────────────────────────
+// ── Telegram tab ─────────────────────────────────────────
+let telegramPosts = [];
+let telegramCurrentImageUrl = "";
+
+async function loadTelegramPosts() {
+  telegramSelect.disabled = true;
+  telegramSelect.innerHTML = '<option value="">Loading…</option>';
+  setStatus("Fetching Telegram posts…");
+
+  try {
+    const response = await fetch("/api/telegram");
+    const data = await response.json();
+
+    if (!response.ok) {
+      setStatus(data.error || "Could not load Telegram posts.");
+      telegramSelect.innerHTML = '<option value="">Failed to load — try refreshing</option>';
+      telegramSelect.disabled = false;
+      return;
+    }
+
+    telegramPosts = data;
+
+    if (telegramPosts.length === 0) {
+      telegramSelect.innerHTML = '<option value="">No posts found</option>';
+      telegramSelect.disabled = false;
+      setStatus("No Telegram posts found.");
+      return;
+    }
+
+    telegramSelect.innerHTML = '<option value="">— Select a post —</option>' +
+      telegramPosts.map((p, i) =>
+        `<option value="${i}">${p.title.length > 80 ? p.title.slice(0, 80) + "…" : p.title}</option>`
+      ).join("");
+
+    telegramSelect.disabled = false;
+    setStatus(`Loaded ${telegramPosts.length} posts.`);
+  } catch (err) {
+    setStatus("Could not reach Telegram API.");
+    telegramSelect.innerHTML = '<option value="">Failed to load — try refreshing</option>';
+    telegramSelect.disabled = false;
+  }
+}
+
+telegramSelect.addEventListener("change", () => {
+  const idx = telegramSelect.value;
+  if (idx === "" || idx === null) {
+    telegramTitleInput.value = "";
+    telegramSourceInput.value = "";
+    telegramCurrentImageUrl = "";
+    return;
+  }
+  const post = telegramPosts[Number(idx)];
+  if (!post) return;
+  telegramTitleInput.value = post.title;
+  telegramSourceInput.value = post.source;
+  telegramCurrentImageUrl = post.imageUrl;
+});
+
+telegramRefresh.addEventListener("click", () => {
+  telegramPosts = [];
+  telegramCurrentImageUrl = "";
+  telegramTitleInput.value = "";
+  telegramSourceInput.value = "";
+  loadTelegramPosts();
+});
+
+telegramGenerate.addEventListener("click", async () => {
+  const title = telegramTitleInput.value.trim();
+  const source = telegramSourceInput.value.trim();
+  if (!title) {
+    setStatus("Select a post first.");
+    return;
+  }
+  setStatus("Drawing the card…");
+  const imageUrl = telegramCurrentImageUrl
+    ? `/api/image?url=${encodeURIComponent(telegramCurrentImageUrl)}`
+    : defaultData.image;
+  await drawCard({ displayUrl: source || "gaelicgamesnews", title, image: imageUrl });
+  setStatus("Card ready.");
+});
+
+// Live redraw when title/source inputs change
+telegramTitleInput.addEventListener("input", () => {
+  if (!telegramTitleInput.value.trim()) return;
+  const imageUrl = telegramCurrentImageUrl
+    ? `/api/image?url=${encodeURIComponent(telegramCurrentImageUrl)}`
+    : defaultData.image;
+  drawCard({ displayUrl: telegramSourceInput.value.trim() || "gaelicgamesnews", title: telegramTitleInput.value, image: imageUrl });
+});
+
+telegramSourceInput.addEventListener("input", () => {
+  if (!telegramTitleInput.value.trim()) return;
+  const imageUrl = telegramCurrentImageUrl
+    ? `/api/image?url=${encodeURIComponent(telegramCurrentImageUrl)}`
+    : defaultData.image;
+  drawCard({ displayUrl: telegramSourceInput.value.trim() || "gaelicgamesnews", title: telegramTitleInput.value, image: imageUrl });
+});
+
 resetButton.addEventListener("click", async () => {
   urlInput.value = "";
   manualImageUpload.value = "";
   manualSource.value = "";
-  manualTitle.value  = "";
-  hideAutoEditFields();
-  controls.titleSize.value  = defaultControls.titleSize;
-  if (controls.titleUppercase) controls.titleUppercase.checked = false;
-  if (controls.titleFit)       controls.titleFit.checked       = false;
-  if (controls.textAlign)      controls.textAlign.value        = "left";
-  // Reset colour-select dropdowns
-  resetColourSelect("bgColourSelect",   defaultControls.background, "Black");
-  resetColourSelect("textColourSelect", defaultControls.text,       "White");
-  resetColourSelect("trimColourSelect", defaultControls.trim,       "Saffron");
-  controls.logoUpload.value    = "";
+  manualTitle.value = "";
+  controls.titleSize.value = defaultControls.titleSize;
+  controls.background.value = defaultControls.background;
+  controls.text.value = defaultControls.text;
+  controls.trim.value = defaultControls.trim;
+  controls.logoUpload.value = "";
   controls.bgImageUpload.value = "";
-  uploadedLogoSrc    = "";
+  uploadedLogoSrc = "";
   uploadedBgImageSrc = "";
+  telegramPosts = [];
+  telegramCurrentImageUrl = "";
+  telegramTitleInput.value = "";
+  telegramSourceInput.value = "";
+  telegramSelect.innerHTML = '<option value="">Loading posts…</option>';
   await drawCard({ ...defaultData });
   setStatus("Reset.");
 });
 
-// ── Colour-select dropdowns ───────────────────────────────
-function initColourSelects() {
-  document.querySelectorAll(".colour-select").forEach((widget) => {
-    const targetId = widget.dataset.target;
-    const hidden   = document.querySelector(`#${targetId}`);
-    const btn      = widget.querySelector(".colour-select__btn");
-    const list     = widget.querySelector(".colour-select__list");
-    const dotBtn   = btn.querySelector(".colour-select__dot");
-    const nameBtn  = btn.querySelector(".colour-select__name");
-
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const isOpen = !list.hidden;
-      document.querySelectorAll(".colour-select__list").forEach(l => { l.hidden = true; });
-      list.hidden = isOpen;
-    });
-
-    list.querySelectorAll("li").forEach((li) => {
-      li.addEventListener("click", () => {
-        const color = li.dataset.color;
-        const name  = li.querySelector(".colour-select__dot").nextSibling?.textContent?.trim()
-                      || li.textContent.trim();
-        dotBtn.style.background = color;
-        nameBtn.textContent     = name;
-        hidden.value            = color;
-        list.hidden             = true;
-        hidden.dispatchEvent(new Event("input"));
-      });
-    });
-  });
-
-  document.addEventListener("click", () => {
-    document.querySelectorAll(".colour-select__list").forEach(l => { l.hidden = true; });
-  });
+// ── Helpers ───────────────────────────────────────────────
+function isPwa() {
+  return window.matchMedia("(display-mode: standalone)").matches ||
+    window.navigator.standalone === true;
 }
 
-initColourSelects();
-
-function resetColourSelect(widgetId, color, name) {
-  const widget = document.querySelector(`#${widgetId}`);
-  if (!widget) return;
-  widget.querySelector(".colour-select__dot").style.background = color;
-  widget.querySelector(".colour-select__name").textContent     = name;
-  widget.querySelector(".colour-select__list").hidden          = true;
-  const hidden = document.querySelector(`#${widget.dataset.target}`);
-  if (hidden) hidden.value = color;
+async function getImageBlob() {
+  return new Promise((res, rej) =>
+    canvas.toBlob(b => b ? res(b) : rej(new Error("Could not generate image")), "image/png")
+  );
 }
 
-// ── Editable auto fields ──────────────────────────────────
-const autoEditFields = document.querySelector("#autoEditFields");
-const autoSource     = document.querySelector("#autoSource");
-const autoTitle      = document.querySelector("#autoTitle");
+// ── Save / Download button ────────────────────────────────
+downloadButton.addEventListener("click", async () => {
+  const filename = "link-preview-card.png";
 
-function showAutoEditFields(data) {
-  autoSource.value = data.displayUrl || "";
-  autoTitle.value  = data.title      || "";
-  autoEditFields.hidden = false;
-}
-function hideAutoEditFields() {
-  autoEditFields.hidden = true;
-  autoSource.value = "";
-  autoTitle.value  = "";
-}
+  // When running as installed PWA on iOS, use Web Share API —
+  // this is the only path that surfaces "Save Image" in the share sheet
+  if (isPwa() && navigator.canShare) {
+    try {
+      const blob = await getImageBlob();
+      const file = new File([blob], filename, { type: "image/png" });
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: "Link Preview Card" });
+        return;
+      }
+    } catch (err) {
+      if (err.name === "AbortError") return; // user cancelled — do nothing
+      // fall through to regular download
+    }
+  }
 
-autoSource.addEventListener("input", () => {
-  currentData = { ...currentData, displayUrl: autoSource.value };
-  drawCard(currentData);
-});
-autoTitle.addEventListener("input", () => {
-  currentData = { ...currentData, title: autoTitle.value };
-  drawCard(currentData);
+  // Desktop / non-PWA: standard anchor download
+  const dataUrl = canvas.toDataURL("image/png");
+  const link = document.createElement("a");
+  link.download = filename;
+  link.href = dataUrl;
+  link.click();
 });
 
-// ── Control listeners ─────────────────────────────────────
-for (const control of [controls.titleSize, controls.background, controls.text, controls.trim, controls.imageAlign, controls.textAlign]) {
+function triggerDownload() {
+  const dataUrl = canvas.toDataURL("image/png");
+  const link = document.createElement("a");
+  link.download = "link-preview-card.png";
+  link.href = dataUrl;
+  link.click();
+}
+
+// ── Share modal ───────────────────────────────────────────
+const shareButton      = document.querySelector("#shareButton");
+const shareOverlay     = document.querySelector("#shareOverlay");
+const shareClose       = document.querySelector("#shareClose");
+const sharePreviewImg  = document.querySelector("#sharePreviewImg");
+const shareDownloadBtn = document.querySelector("#shareDownloadBtn");
+
+function openShareModal() {
+  sharePreviewImg.src = canvas.toDataURL("image/png");
+  shareOverlay.hidden = false;
+  document.body.style.overflow = "hidden";
+}
+
+function closeShareModal() {
+  shareOverlay.hidden = true;
+  document.body.style.overflow = "";
+}
+
+shareButton.addEventListener("click", openShareModal);
+shareClose.addEventListener("click", closeShareModal);
+shareDownloadBtn.addEventListener("click", () => { triggerDownload(); closeShareModal(); });
+
+// Close on backdrop click
+shareOverlay.addEventListener("click", (e) => {
+  if (e.target === shareOverlay) closeShareModal();
+});
+
+// Close on Escape
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !shareOverlay.hidden) closeShareModal();
+});
+
+
+
+for (const control of [controls.titleSize, controls.background, controls.text, controls.trim, controls.imageAlign]) {
   control.addEventListener("input", () => drawCard(currentData));
 }
-controls.titleUppercase?.addEventListener("change", () => drawCard(currentData));
-controls.titleFit?.addEventListener("change", () => drawCard(currentData));
 
-// ── Logo upload ───────────────────────────────────────────
 controls.logoUpload.addEventListener("change", () => {
   const file = controls.logoUpload.files?.[0];
-  if (!file) { uploadedLogoSrc = ""; drawCard(currentData); return; }
+  if (!file) {
+    uploadedLogoSrc = "";
+    drawCard(currentData);
+    return;
+  }
+
   if (file.type !== "image/png" && file.type !== "image/svg+xml") {
     controls.logoUpload.value = "";
     setStatus("Please upload a PNG or SVG logo.");
     return;
   }
+
   const reader = new FileReader();
   reader.addEventListener("load", async () => {
     uploadedLogoSrc = typeof reader.result === "string" ? reader.result : "";
@@ -448,10 +576,14 @@ controls.logoUpload.addEventListener("change", () => {
   reader.readAsDataURL(file);
 });
 
-// ── Background image upload ───────────────────────────────
 controls.bgImageUpload.addEventListener("change", () => {
   const file = controls.bgImageUpload.files?.[0];
-  if (!file) { uploadedBgImageSrc = ""; drawCard(currentData); return; }
+  if (!file) {
+    uploadedBgImageSrc = "";
+    drawCard(currentData);
+    return;
+  }
+
   const reader = new FileReader();
   reader.addEventListener("load", async () => {
     uploadedBgImageSrc = typeof reader.result === "string" ? reader.result : "";
@@ -461,58 +593,4 @@ controls.bgImageUpload.addEventListener("change", () => {
   reader.readAsDataURL(file);
 });
 
-// ── Title size stepper ────────────────────────────────────
-document.querySelector("#titleSizeMinus").addEventListener("click", () => {
-  const input = controls.titleSize;
-  input.value = Math.max(Number(input.min), Number(input.value) - Number(input.step));
-  input.dispatchEvent(new Event("input"));
-});
-document.querySelector("#titleSizePlus").addEventListener("click", () => {
-  const input = controls.titleSize;
-  input.value = Math.min(Number(input.max), Number(input.value) + Number(input.step));
-  input.dispatchEvent(new Event("input"));
-});
-
-// ── Download / Open Image ─────────────────────────────────
-const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-downloadButton.textContent = isMobile ? "🖼 OPEN IMAGE" : "⬇ DOWNLOAD IMAGE";
-
-downloadButton.addEventListener("click", () => {
-  const dataUrl = canvas.toDataURL("image/png");
-  if (isMobile) {
-    const win = window.open("", "_blank");
-    if (win) {
-      win.document.write(
-        `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">` +
-        `<title>Link Preview Card</title>` +
-        `<style>
-          * { margin:0; padding:0; box-sizing:border-box; }
-          body { background:#111316; min-height:100vh; display:flex; flex-direction:column; }
-          .toolbar { display:flex; align-items:center; justify-content:space-between;
-            padding:12px 16px; background:#191c21; border-bottom:1px solid #2c3038; flex-shrink:0; }
-          .toolbar-hint { color:#a8afb9; font-family:system-ui,sans-serif; font-size:13px; }
-          .close-btn { background:#f4f5fb; color:#08090b; border:none; border-radius:6px;
-            padding:8px 16px; font-family:system-ui,sans-serif; font-size:13px; font-weight:700; cursor:pointer; }
-          .img-wrap { flex:1; display:flex; align-items:flex-start; justify-content:center; padding:16px; }
-          img { display:block; width:100%; max-width:600px; height:auto; border-radius:8px; }
-        </style></head>` +
-        `<body>
-          <div class="toolbar">
-            <span class="toolbar-hint">Hold image → Save to Photos</span>
-            <button class="close-btn" onclick="window.close()">✕ Close</button>
-          </div>
-          <div class="img-wrap"><img src="${dataUrl}" alt="Link Preview Card"></div>
-        </body></html>`
-      );
-      win.document.close();
-    }
-  } else {
-    const link = document.createElement("a");
-    link.download = "link-preview-card.png";
-    link.href = dataUrl;
-    link.click();
-  }
-});
-
-// ── Initial draw ──────────────────────────────────────────
 document.fonts?.ready.then(() => drawCard()) || drawCard();

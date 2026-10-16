@@ -182,6 +182,102 @@ async function handleImageProxy(req, res, target) {
   }
 }
 
+const TELEGRAM_TOKEN = "8898434283:AAHRE17Rw2b8Ob5nE1n1GCR5Rbekfu9Q9UE";
+const TELEGRAM_CHANNEL = "@gaelicgamesnews";
+
+async function handleTelegram(req, res) {
+  try {
+    const updatesUrl = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/getUpdates?offset=-20&limit=20&allowed_updates=["channel_post"]`;
+    const response = await fetch(updatesUrl, {
+      headers: { "user-agent": "link-to-image-agent" }
+    });
+
+    if (!response.ok) {
+      sendJson(res, 502, { error: `Telegram API returned ${response.status}.` });
+      return;
+    }
+
+    const data = await response.json();
+    if (!data.ok) {
+      sendJson(res, 502, { error: data.description || "Telegram API error." });
+      return;
+    }
+
+    const posts = [];
+    for (const update of data.result || []) {
+      const post = update.channel_post;
+      if (!post) continue;
+      // Filter to the target channel only
+      const chatUsername = post.chat?.username;
+      if (chatUsername && `@${chatUsername}`.toLowerCase() !== TELEGRAM_CHANNEL.toLowerCase()) continue;
+
+      const caption = post.caption || post.text || "";
+      const entities = post.caption_entities || post.entities || [];
+
+      // Extract URL from entities
+      let link = "";
+      for (const entity of entities) {
+        if (entity.type === "text_link" && entity.url) {
+          link = entity.url;
+          break;
+        }
+        if (entity.type === "url") {
+          link = caption.slice(entity.offset, entity.offset + entity.length);
+          break;
+        }
+      }
+
+      // Build title: caption with URL stripped from end
+      let title = caption;
+      if (link) {
+        title = title.replace(link, "").trim();
+      }
+      title = title.trim();
+      if (!title) continue; // skip posts with no readable text
+
+      // Extract source domain
+      let source = "";
+      if (link) {
+        try {
+          source = new URL(link).hostname.replace(/^www\./, "");
+        } catch {
+          source = "";
+        }
+      }
+
+      // Get image URL
+      let imageUrl = "";
+      if (post.photo && post.photo.length > 0) {
+        const largest = post.photo[post.photo.length - 1];
+        try {
+          const fileRes = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/getFile?file_id=${encodeURIComponent(largest.file_id)}`);
+          const fileData = await fileRes.json();
+          if (fileData.ok && fileData.result?.file_path) {
+            imageUrl = `https://api.telegram.org/file/bot${TELEGRAM_TOKEN}/${fileData.result.file_path}`;
+          }
+        } catch {
+          // no image
+        }
+      }
+
+      posts.push({
+        title,
+        link,
+        source,
+        imageUrl,
+        messageId: post.message_id
+      });
+    }
+
+    // Most recent first
+    posts.reverse();
+
+    sendJson(res, 200, posts);
+  } catch (error) {
+    sendJson(res, 500, { error: error instanceof Error ? error.message : "Telegram fetch failed." });
+  }
+}
+
 async function serveStatic(req, res, pathname) {
   const filePath = pathname === "/" ? join(publicDir, "index.html") : join(publicDir, pathname);
   if (!filePath.startsWith(publicDir)) {
@@ -210,6 +306,11 @@ const server = http.createServer(async (req, res) => {
 
   if (requestUrl.pathname === "/api/image") {
     await handleImageProxy(req, res, requestUrl.searchParams.get("url") || "");
+    return;
+  }
+
+  if (requestUrl.pathname === "/api/telegram") {
+    await handleTelegram(req, res);
     return;
   }
 

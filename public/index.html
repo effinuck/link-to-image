@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Link to Image</title>
 
     <!-- PWA -->
@@ -16,7 +16,7 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Saira+Condensed:wght@700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/styles.css">
   </head>
   <body>
@@ -32,9 +32,9 @@
         <div class="tabs" role="tablist">
           <button class="tab active" id="tabAuto" role="tab" aria-selected="true" type="button">Auto-generate</button>
           <button class="tab" id="tabManual" role="tab" aria-selected="false" type="button">Manual</button>
+          <button class="tab" id="tabTelegram" role="tab" aria-selected="false" type="button">Telegram</button>
         </div>
 
-        <!-- Auto panel -->
         <section class="mode-panel" id="autoPanel" role="tabpanel" aria-labelledby="tabAuto">
           <form class="url-form" id="urlForm">
             <label for="urlInput">Webpage Link</label>
@@ -43,16 +43,8 @@
               <button type="submit">GENERATE</button>
             </div>
           </form>
-          <!-- Editable fields shown after auto-fetch -->
-          <div id="autoEditFields" hidden>
-            <label for="autoSource">Source</label>
-            <input id="autoSource" type="text" placeholder="sitename.com">
-            <label for="autoTitle">Title</label>
-            <textarea id="autoTitle" rows="3" placeholder="Article title..."></textarea>
-          </div>
         </section>
 
-        <!-- Manual panel -->
         <section class="mode-panel" id="manualPanel" role="tabpanel" aria-labelledby="tabManual" hidden>
           <form class="url-form" id="manualForm">
             <label for="manualImageUpload">Image</label>
@@ -65,112 +57,24 @@
           </form>
         </section>
 
-        <div class="settings-grid">
-
-          <!-- Text Background + Text Colour — two columns -->
-          <label>
-            Text Background
-            <div class="colour-select" id="bgColourSelect" data-target="backgroundColor" data-value="#000000">
-              <button type="button" class="colour-select__btn" aria-haspopup="listbox">
-                <span class="colour-select__dot" style="background:#000000"></span>
-                <span class="colour-select__name">Black</span>
-                <span class="colour-select__arrow">▾</span>
-              </button>
-              <ul class="colour-select__list" role="listbox" hidden>
-                <li role="option" data-color="#000000"><span class="colour-select__dot" style="background:#000000"></span>Black</li>
-                <li role="option" data-color="#ffffff"><span class="colour-select__dot" style="background:#ffffff"></span>White</li>
-                <li role="option" data-color="#FFCC00"><span class="colour-select__dot" style="background:#FFCC00"></span>Saffron</li>
-                <li role="option" data-color="#CC0000"><span class="colour-select__dot" style="background:#CC0000"></span>Red</li>
-                <li role="option" data-color="#214DCF"><span class="colour-select__dot" style="background:#214DCF"></span>Royal Blue</li>
-                <li role="option" data-color="#008A2E"><span class="colour-select__dot" style="background:#008A2E"></span>Green</li>
-                <li role="option" data-color="#690000"><span class="colour-select__dot" style="background:#690000"></span>Maroon</li>
-                <li role="option" data-color="#360088"><span class="colour-select__dot" style="background:#360088"></span>Purple</li>
-                <li role="option" data-color="#FF8400"><span class="colour-select__dot" style="background:#FF8400"></span>Orange</li>
-                <li role="option" data-color="#000F60"><span class="colour-select__dot" style="background:#000F60"></span>Navy</li>
-                <li role="option" data-color="#49C3FC"><span class="colour-select__dot" style="background:#49C3FC"></span>Sky Blue</li>
-              </ul>
-            </div>
-            <input type="hidden" id="backgroundColor" value="#000000">
-          </label>
-
-          <label>
-            Text Colour
-            <div class="colour-select" id="textColourSelect" data-target="textColor" data-value="#ffffff">
-              <button type="button" class="colour-select__btn" aria-haspopup="listbox">
-                <span class="colour-select__dot" style="background:#ffffff"></span>
-                <span class="colour-select__name">White</span>
-                <span class="colour-select__arrow">▾</span>
-              </button>
-              <ul class="colour-select__list" role="listbox" hidden>
-                <li role="option" data-color="#000000"><span class="colour-select__dot" style="background:#000000"></span>Black</li>
-                <li role="option" data-color="#ffffff"><span class="colour-select__dot" style="background:#ffffff"></span>White</li>
-                <li role="option" data-color="#FFCC00"><span class="colour-select__dot" style="background:#FFCC00"></span>Saffron</li>
-                <li role="option" data-color="#CC0000"><span class="colour-select__dot" style="background:#CC0000"></span>Red</li>
-                <li role="option" data-color="#214DCF"><span class="colour-select__dot" style="background:#214DCF"></span>Royal Blue</li>
-                <li role="option" data-color="#008A2E"><span class="colour-select__dot" style="background:#008A2E"></span>Green</li>
-                <li role="option" data-color="#690000"><span class="colour-select__dot" style="background:#690000"></span>Maroon</li>
-                <li role="option" data-color="#360088"><span class="colour-select__dot" style="background:#360088"></span>Purple</li>
-                <li role="option" data-color="#FF8400"><span class="colour-select__dot" style="background:#FF8400"></span>Orange</li>
-                <li role="option" data-color="#000F60"><span class="colour-select__dot" style="background:#000F60"></span>Navy</li>
-                <li role="option" data-color="#49C3FC"><span class="colour-select__dot" style="background:#49C3FC"></span>Sky Blue</li>
-              </ul>
-            </div>
-            <input type="hidden" id="textColor" value="#ffffff">
-          </label>
-
-          <!-- Trim/Source Colour + Title options — two columns -->
-          <label>
-            Trim/Source Colour
-            <div class="colour-select" id="trimColourSelect" data-target="trimColor" data-value="#FFCC00">
-              <button type="button" class="colour-select__btn" aria-haspopup="listbox">
-                <span class="colour-select__dot" style="background:#FFCC00"></span>
-                <span class="colour-select__name">Saffron</span>
-                <span class="colour-select__arrow">▾</span>
-              </button>
-              <ul class="colour-select__list" role="listbox" hidden>
-                <li role="option" data-color="#000000"><span class="colour-select__dot" style="background:#000000"></span>Black</li>
-                <li role="option" data-color="#ffffff"><span class="colour-select__dot" style="background:#ffffff"></span>White</li>
-                <li role="option" data-color="#FFCC00"><span class="colour-select__dot" style="background:#FFCC00"></span>Saffron</li>
-                <li role="option" data-color="#CC0000"><span class="colour-select__dot" style="background:#CC0000"></span>Red</li>
-                <li role="option" data-color="#214DCF"><span class="colour-select__dot" style="background:#214DCF"></span>Royal Blue</li>
-                <li role="option" data-color="#008A2E"><span class="colour-select__dot" style="background:#008A2E"></span>Green</li>
-                <li role="option" data-color="#690000"><span class="colour-select__dot" style="background:#690000"></span>Maroon</li>
-                <li role="option" data-color="#360088"><span class="colour-select__dot" style="background:#360088"></span>Purple</li>
-                <li role="option" data-color="#FF8400"><span class="colour-select__dot" style="background:#FF8400"></span>Orange</li>
-                <li role="option" data-color="#000F60"><span class="colour-select__dot" style="background:#000F60"></span>Navy</li>
-                <li role="option" data-color="#49C3FC"><span class="colour-select__dot" style="background:#49C3FC"></span>Sky Blue</li>
-              </ul>
-            </div>
-            <input type="hidden" id="trimColor" value="#FFCC00">
-          </label>
-
-          <div class="title-options">
-            <label>
-              Text Align
-              <select id="textAlign">
-                <option value="left">Left</option>
-                <option value="center">Centre</option>
-              </select>
-            </label>
+        <section class="mode-panel" id="telegramPanel" role="tabpanel" aria-labelledby="tabTelegram" hidden>
+          <div class="telegram-select-row">
+            <select id="telegramSelect" aria-label="Select a Telegram post">
+              <option value="">Loading posts…</option>
+            </select>
+            <button class="ghost-button" id="telegramRefresh" type="button" title="Refresh posts" aria-label="Refresh posts">↻</button>
           </div>
+          <label for="telegramTitle" class="telegram-field-label">Title</label>
+          <input id="telegramTitle" type="text" placeholder="Post title">
+          <label for="telegramSource" class="telegram-field-label">Source</label>
+          <input id="telegramSource" type="text" placeholder="example.com">
+          <button id="telegramGenerate" type="button">GENERATE</button>
+        </section>
 
-          <label class="span-full">
-            Logo Image
-            <input id="logoUpload" type="file" accept="image/png,image/svg+xml">
-          </label>
-          <label class="span-full">
-            Text Background Image
-            <input id="bgImageUpload" type="file" accept="image/*">
-          </label>
-
-          <!-- Title Size + Image Align -->
+        <div class="settings-grid">
           <label>
             Title Size
-            <div class="stepper">
-              <button type="button" class="stepper-btn" id="titleSizeMinus" aria-label="Decrease title size">−</button>
-              <input id="titleSize" type="number" min="20" max="200" step="1" value="58">
-              <button type="button" class="stepper-btn" id="titleSizePlus" aria-label="Increase title size">+</button>
-            </div>
+            <input id="titleSize" type="number" min="40" max="92" step="1" value="58">
           </label>
           <label>
             Image Align
@@ -180,19 +84,33 @@
               <option value="right">Right</option>
             </select>
           </label>
-
-          <!-- Uppercase checkbox -->
-          <label class="checkbox-label span-full">
-            <input type="checkbox" id="titleUppercase">
-            Uppercase
+          <label>
+            Text Background
+            <input id="backgroundColor" type="color" value="#000000">
           </label>
-
+          <label>
+            Text Colour
+            <input id="textColor" type="color" value="#f4f5fb">
+          </label>
+          <label>
+            Trim/Source colour
+            <input id="trimColor" type="color" value="#f0d13a">
+          </label>
+          <label class="span-full">
+            Logo Image
+            <input id="logoUpload" type="file" accept="image/png,image/svg+xml">
+          </label>
+          <label class="span-full">
+            Text Background Image
+            <input id="bgImageUpload" type="file" accept="image/*">
+          </label>
         </div>
 
         <div class="status" id="status" role="status" aria-live="polite">Ready.</div>
 
         <div class="action-row">
-          <button id="downloadButton" type="button">⬇ DOWNLOAD IMAGE</button>
+          <button id="downloadButton" type="button">⬇ SAVE IMAGE</button>
+          <button id="shareButton" type="button" class="ghost-button">↗ SHARE</button>
         </div>
       </section>
 
@@ -200,6 +118,34 @@
         <canvas id="previewCanvas" width="900" height="950"></canvas>
       </section>
     </main>
+
+    <!-- Share modal -->
+    <div class="share-overlay" id="shareOverlay" hidden aria-modal="true" role="dialog" aria-label="Share image">
+      <div class="share-modal">
+        <div class="share-modal-header">
+          <span>Share image</span>
+          <button class="share-close" id="shareClose" aria-label="Close">✕</button>
+        </div>
+        <img class="share-preview-img" id="sharePreviewImg" alt="Card preview" />
+        <p class="share-hint">Download the image, then post it on your chosen platform:</p>
+        <button class="share-download-btn" id="shareDownloadBtn" type="button">⬇ Download image</button>
+        <div class="share-divider"><span>then open</span></div>
+        <div class="share-buttons">
+          <a class="share-btn share-btn--facebook" id="shareFacebook" href="https://www.facebook.com/" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.236 2.686.236v2.97h-1.513c-1.491 0-1.956.93-1.956 1.883v2.271h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/></svg>
+            Facebook
+          </a>
+          <a class="share-btn share-btn--twitter" id="shareTwitter" href="https://x.com/" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.737-8.835L1.254 2.25H8.08l4.253 5.622 5.911-5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            X (Twitter)
+          </a>
+          <a class="share-btn share-btn--instagram" id="shareInstagram" href="https://www.instagram.com/" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+            Instagram
+          </a>
+        </div>
+      </div>
+    </div>
 
     <script src="/app.js" type="module"></script>
     <script>
