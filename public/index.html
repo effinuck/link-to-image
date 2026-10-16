@@ -25,7 +25,7 @@
         </div>
 
         <div class="tabs" role="tablist">
-          <button class="tab active" id="tabAuto" role="tab" aria-selected="true" type="button">Auto</button>
+          <button class="tab active" id="tabAuto" role="tab" aria-selected="true" type="button">Auto-generate</button>
           <button class="tab" id="tabManual" role="tab" aria-selected="false" type="button">Manual</button>
           <button class="tab" id="tabTelegram" role="tab" aria-selected="false" type="button">Telegram</button>
         </div>
@@ -110,13 +110,21 @@
             <div class="colour-dropdown" id="trimDropdown" hidden></div>
           </div>
 
-          <!-- Text Align | (title-options placeholder) -->
+          <!-- Text Align | Image Align -->
           <div class="title-options">
             <label>
               Text Align
               <select id="textAlign">
                 <option value="left">Left</option>
                 <option value="center">Centre</option>
+              </select>
+            </label>
+            <label>
+              Image Align
+              <select id="imageAlign">
+                <option value="center">Centre</option>
+                <option value="left">Left</option>
+                <option value="right">Right</option>
               </select>
             </label>
           </div>
@@ -131,7 +139,7 @@
             <input id="bgImageUpload" type="file" accept="image/*">
           </label>
 
-          <!-- Title Size + Image Align -->
+          <!-- Title Size + Case -->
           <label>
             Title Size
             <div class="stepper">
@@ -141,18 +149,11 @@
             </div>
           </label>
           <label>
-            Image Align
-            <select id="imageAlign">
-              <option value="center">Centre</option>
-              <option value="left">Left</option>
-              <option value="right">Right</option>
+            Title Case
+            <select id="titleCase">
+              <option value="upper">UPPERCASE</option>
+              <option value="lower">Lower case</option>
             </select>
-          </label>
-
-          <!-- Uppercase checkbox -->
-          <label class="checkbox-label span-full">
-            <input type="checkbox" id="titleUppercase">
-            Uppercase
           </label>
 
         </div>
