@@ -8,11 +8,12 @@ const publicDir = join(__dirname, "public");
 const host = process.env.HOST || (process.env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1");
 const port = Number(process.env.PORT || 4173);
 
+const TELEGRAM_CHANNEL = "@gaelicgamesnews";
+
 const mimeTypes = {
   ".css": "text/css; charset=utf-8",
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
-  ".json": "application/json; charset=utf-8",
   ".png": "image/png",
   ".svg": "image/svg+xml; charset=utf-8"
 };
@@ -76,7 +77,6 @@ function decodeHtml(value = "") {
 
 function getMeta(html, keys) {
   for (const key of keys) {
-    // Try double-quoted content first, then single-quoted
     const patterns = [
       new RegExp(`<meta[^>]+property=["']${key}["'][^>]+content="([^"]*)"[^>]*>`, "i"),
       new RegExp(`<meta[^>]+content="([^"]*)"[^>]+property=["']${key}["'][^>]*>`, "i"),
@@ -182,99 +182,90 @@ async function handleImageProxy(req, res, target) {
   }
 }
 
-const TELEGRAM_TOKEN = "8898434283:AAHRE17Rw2b8Ob5nE1n1GCR5Rbekfu9Q9UE";
-const TELEGRAM_CHANNEL = "@gaelicgamesnews";
-
 async function handleTelegram(req, res) {
+  // Scrape the public Telegram channel web preview (t.me/s/channelname)
+  // This works for any public channel without needing bot membership in the channel.
+  const channelName = TELEGRAM_CHANNEL.replace(/^@/, "");
+
   try {
-    const updatesUrl = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/getUpdates?offset=-20&limit=20&allowed_updates=["channel_post"]`;
-    const response = await fetch(updatesUrl, {
-      headers: { "user-agent": "link-to-image-agent" }
+    const pageRes = await fetch(`https://t.me/s/${channelName}`, {
+      redirect: "follow",
+      headers: {
+        "accept": "text/html,application/xhtml+xml,*/*;q=0.9",
+        "accept-language": "en-IE,en;q=0.9",
+        "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+      }
     });
 
-    if (!response.ok) {
-      sendJson(res, 502, { error: `Telegram API returned ${response.status}.` });
+    if (!pageRes.ok) {
+      sendJson(res, 502, { error: `Telegram channel page returned ${pageRes.status}` });
       return;
     }
 
-    const data = await response.json();
-    if (!data.ok) {
-      sendJson(res, 502, { error: data.description || "Telegram API error." });
-      return;
-    }
-
+    const html = await pageRes.text();
     const posts = [];
-    for (const update of data.result || []) {
-      const post = update.channel_post;
-      if (!post) continue;
-      // Filter to the target channel only
-      const chatUsername = post.chat?.username;
-      if (chatUsername && `@${chatUsername}`.toLowerCase() !== TELEGRAM_CHANNEL.toLowerCase()) continue;
 
-      const caption = post.caption || post.text || "";
-      const entities = post.caption_entities || post.entities || [];
+    // Each post is in a <div class="tgme_widget_message_wrap">
+    // We look for messages that have both a photo and a caption with a link.
+    const messageBlocks = html.split('<div class="tgme_widget_message_wrap');
+    // Skip first element (before first block)
+    for (let i = messageBlocks.length - 1; i >= 1; i--) {
+      const block = messageBlocks[i];
 
-      // Extract URL from entities
+      // Extract message id
+      const idMatch = block.match(/data-post="[^/]+\/(\d+)"/);
+      const messageId = idMatch ? Number(idMatch[1]) : i;
+
+      // Must have a photo
+      const photoMatch = block.match(/<a[^>]+class="[^"]*tgme_widget_message_photo_wrap[^"]*"[^>]*style="[^"]*background-image:url\('([^']+)'\)/);
+      if (!photoMatch) continue;
+      const imageUrl = photoMatch[1];
+
+      // Get caption text
+      const captionMatch = block.match(/<div[^>]+class="[^"]*tgme_widget_message_text[^"]*"[^>]*>([\s\S]*?)<\/div>/);
+      if (!captionMatch) continue;
+
+      const rawCaption = captionMatch[1];
+
+      // Extract href links from the caption HTML
       let link = "";
-      for (const entity of entities) {
-        if (entity.type === "text_link" && entity.url) {
-          link = entity.url;
-          break;
-        }
-        if (entity.type === "url") {
-          link = caption.slice(entity.offset, entity.offset + entity.length);
-          break;
+      const linkMatch = rawCaption.match(/<a[^>]+href="(https?:\/\/[^"]+)"[^>]*>/);
+      if (linkMatch) {
+        link = linkMatch[1];
+        // Telegram sometimes wraps links via t.me redirect — unwrap if so
+        if (link.includes("t.me") && link.includes("?url=")) {
+          try { link = new URL(link).searchParams.get("url") || link; } catch { /* keep */ }
         }
       }
 
-      // Build title: caption with URL stripped from end
-      let title = caption;
-      if (link) {
-        title = title.replace(link, "").trim();
-      }
-      title = title.trim();
-      if (!title) continue; // skip posts with no readable text
+      // Strip HTML tags to get plain text title
+      let title = rawCaption
+        .replace(/<br\s*\/?>/gi, " ")
+        .replace(/<[^>]+>/g, "")
+        .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+        .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, " ")
+        .replace(/&ndash;/g, "–").replace(/&mdash;/g, "—")
+        .trim();
 
-      // Extract source domain
+      // Strip any bare URLs from title
+      title = title.replace(/https?:\/\/\S+/g, "").trim();
+
+      if (!title) continue;
+
+      // Source domain
       let source = "";
       if (link) {
-        try {
-          source = new URL(link).hostname.replace(/^www\./, "");
-        } catch {
-          source = "";
-        }
+        try { source = new URL(link).hostname.replace(/^www\./, ""); } catch { /* ignore */ }
       }
 
-      // Get image URL
-      let imageUrl = "";
-      if (post.photo && post.photo.length > 0) {
-        const largest = post.photo[post.photo.length - 1];
-        try {
-          const fileRes = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/getFile?file_id=${encodeURIComponent(largest.file_id)}`);
-          const fileData = await fileRes.json();
-          if (fileData.ok && fileData.result?.file_path) {
-            imageUrl = `https://api.telegram.org/file/bot${TELEGRAM_TOKEN}/${fileData.result.file_path}`;
-          }
-        } catch {
-          // no image
-        }
-      }
+      posts.push({ messageId, title, link, source, imageUrl });
 
-      posts.push({
-        title,
-        link,
-        source,
-        imageUrl,
-        messageId: post.message_id
-      });
+      if (posts.length >= 20) break;
     }
-
-    // Most recent first
-    posts.reverse();
 
     sendJson(res, 200, posts);
   } catch (error) {
-    sendJson(res, 500, { error: error instanceof Error ? error.message : "Telegram fetch failed." });
+    sendJson(res, 500, { error: error instanceof Error ? error.message : "Could not fetch Telegram posts." });
   }
 }
 

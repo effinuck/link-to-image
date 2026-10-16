@@ -1,70 +1,167 @@
-const form = document.querySelector("#urlForm");
-const urlInput = document.querySelector("#urlInput");
-const manualForm = document.querySelector("#manualForm");
+// ─── Colour palette ──────────────────────────────────────────────────────────
+const COLOURS = [
+  { name: "Black",      hex: "#000000" },
+  { name: "White",      hex: "#ffffff" },
+  { name: "Saffron",    hex: "#FFCC00" },
+  { name: "Red",        hex: "#CC0000" },
+  { name: "Royal Blue", hex: "#214DCF" },
+  { name: "Green",      hex: "#008A2E" },
+  { name: "Maroon",     hex: "#690000" },
+  { name: "Purple",     hex: "#360088" },
+  { name: "Orange",     hex: "#FF8400" },
+  { name: "Navy",       hex: "#000F60" },
+  { name: "Sky Blue",   hex: "#49C3FC" },
+];
+
+// ─── DOM refs ─────────────────────────────────────────────────────────────────
+const form            = document.querySelector("#urlForm");
+const urlInput        = document.querySelector("#urlInput");
+const autoFields      = document.querySelector("#autoFields");
+const autoSource      = document.querySelector("#autoSource");
+const autoTitle       = document.querySelector("#autoTitle");
+const manualForm      = document.querySelector("#manualForm");
 const manualImageUpload = document.querySelector("#manualImageUpload");
-const manualSource = document.querySelector("#manualSource");
-const manualTitle = document.querySelector("#manualTitle");
-const tabAuto = document.querySelector("#tabAuto");
-const tabManual = document.querySelector("#tabManual");
-const tabTelegram = document.querySelector("#tabTelegram");
-const autoPanel = document.querySelector("#autoPanel");
-const manualPanel = document.querySelector("#manualPanel");
-const telegramPanel = document.querySelector("#telegramPanel");
-const telegramSelect = document.querySelector("#telegramSelect");
+const manualSource    = document.querySelector("#manualSource");
+const manualTitle     = document.querySelector("#manualTitle");
+const tabAuto         = document.querySelector("#tabAuto");
+const tabManual       = document.querySelector("#tabManual");
+const tabTelegram     = document.querySelector("#tabTelegram");
+const autoPanel       = document.querySelector("#autoPanel");
+const manualPanel     = document.querySelector("#manualPanel");
+const telegramPanel   = document.querySelector("#telegramPanel");
+const telegramSelect  = document.querySelector("#telegramSelect");
 const telegramRefresh = document.querySelector("#telegramRefresh");
-const telegramTitleInput = document.querySelector("#telegramTitle");
-const telegramSourceInput = document.querySelector("#telegramSource");
+const telegramFields  = document.querySelector("#telegramFields");
+const telegramTitle   = document.querySelector("#telegramTitle");
+const telegramSource  = document.querySelector("#telegramSource");
 const telegramGenerate = document.querySelector("#telegramGenerate");
-const resetButton = document.querySelector("#resetButton");
-const downloadButton = document.querySelector("#downloadButton");
-const statusEl = document.querySelector("#status");
-const canvas = document.querySelector("#previewCanvas");
-const ctx = canvas.getContext("2d");
-const fontStack = "Poppins, Arial, sans-serif";
+const resetButton     = document.querySelector("#resetButton");
+const downloadButton  = document.querySelector("#downloadButton");
+const statusEl        = document.querySelector("#status");
+const canvas          = document.querySelector("#previewCanvas");
+const ctx             = canvas.getContext("2d");
 
 const controls = {
-  titleSize: document.querySelector("#titleSize"),
-  imageAlign: document.querySelector("#imageAlign"),
-  background: document.querySelector("#backgroundColor"),
-  text: document.querySelector("#textColor"),
-  trim: document.querySelector("#trimColor"),
-  logoUpload: document.querySelector("#logoUpload"),
-  bgImageUpload: document.querySelector("#bgImageUpload")
+  titleSize:      document.querySelector("#titleSize"),
+  imageAlign:     document.querySelector("#imageAlign"),
+  textAlign:      document.querySelector("#textAlign"),
+  titleUppercase: document.querySelector("#titleUppercase"),
+  titleFit:       document.querySelector("#titleFit"),
+  logoUpload:     document.querySelector("#logoUpload"),
+  bgImageUpload:  document.querySelector("#bgImageUpload"),
+  // Colour values (set by custom pickers)
+  background: { value: "#000000" },
+  text:        { value: "#ffffff" },
+  trim:        { value: "#FFCC00" },
 };
 
-let uploadedLogoSrc = "";
-let uploadedBgImageSrc = "";
+const fontStack   = "Inter, ui-sans-serif, system-ui, sans-serif";
+const titleFont   = "Saira Condensed, ui-sans-serif, system-ui, sans-serif";
+const titleWeight = "800";
 
+let uploadedLogoSrc    = "";
+let uploadedBgImageSrc = "";
+let telegramImageUrl   = "";
+let telegramLoaded     = false;
+
+// ─── Colour picker ────────────────────────────────────────────────────────────
+function buildColourPicker(triggerId, dropdownId, dotId, nameId, controlKey, defaultHex) {
+  const trigger  = document.getElementById(triggerId);
+  const dropdown = document.getElementById(dropdownId);
+  const dot      = document.getElementById(dotId);
+  const nameEl   = document.getElementById(nameId);
+
+  function select(colour) {
+    controls[controlKey].value = colour.hex;
+    dot.style.background = colour.hex;
+    dot.style.outline = colour.hex === "#ffffff" ? "1px solid #555" : "none";
+    nameEl.textContent = colour.name;
+    dropdown.hidden = true;
+    trigger.setAttribute("aria-expanded", "false");
+    drawCard(currentData);
+  }
+
+  function openDropdown() {
+    // Build items
+    dropdown.innerHTML = "";
+    for (const colour of COLOURS) {
+      const item = document.createElement("div");
+      item.className = "colour-option";
+      item.setAttribute("role", "option");
+      item.setAttribute("tabindex", "0");
+      const d = document.createElement("span");
+      d.className = "colour-dot";
+      d.style.background = colour.hex;
+      if (colour.hex === "#ffffff") d.style.outline = "1px solid #555";
+      const n = document.createElement("span");
+      n.textContent = colour.name;
+      item.append(d, n);
+      item.addEventListener("click", () => select(colour));
+      item.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(colour); } });
+      dropdown.append(item);
+    }
+    dropdown.hidden = false;
+    trigger.setAttribute("aria-expanded", "true");
+  }
+
+  trigger.addEventListener("click", () => {
+    if (dropdown.hidden) openDropdown(); else { dropdown.hidden = true; trigger.setAttribute("aria-expanded", "false"); }
+  });
+  trigger.addEventListener("keydown", e => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); if (dropdown.hidden) openDropdown(); else { dropdown.hidden = true; trigger.setAttribute("aria-expanded", "false"); } }
+  });
+
+  // Close on outside click
+  document.addEventListener("click", e => {
+    if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
+      dropdown.hidden = true;
+      trigger.setAttribute("aria-expanded", "false");
+    }
+  });
+
+  // Set initial
+  const initial = COLOURS.find(c => c.hex.toLowerCase() === defaultHex.toLowerCase()) || COLOURS[0];
+  select(initial);
+}
+
+buildColourPicker("backgroundSelect", "backgroundDropdown", "backgroundDot", "backgroundName", "background", "#000000");
+buildColourPicker("textSelect",       "textDropdown",       "textDot",       "textName",       "text",       "#ffffff");
+buildColourPicker("trimSelect",       "trimDropdown",       "trimDot",       "trimName",       "trim",       "#FFCC00");
+
+// ─── Default data ─────────────────────────────────────────────────────────────
 const defaultData = {
   displayUrl: "sitename.com",
   title: "Title of the webpage or article will appear here",
-  image: "https://images.unsplash.com/photo-1558637845-c8b7ead71a3e?q=80&w=1632&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-};
-
-const defaultControls = {
-  titleSize: "58",
-  background: "#000000",
-  text: "#f4f5fb",
-  trim: "#f0d13a"
+  image: "/sample-article-image"
 };
 
 let currentData = { ...defaultData };
 
-function setStatus(message) {
-  statusEl.textContent = message;
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function setStatus(message) { statusEl.textContent = message; }
+
+function decodeHtmlEntities(str) {
+  return str
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(Number(dec)))
+    .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&apos;/g, "'")
+    .replace(/&nbsp;/g, " ").replace(/&ndash;/g, "–").replace(/&mdash;/g, "—")
+    .replace(/&lsquo;/g, "‘").replace(/&rsquo;/g, "’")
+    .replace(/&ldquo;/g, "“").replace(/&rdquo;/g, "”");
 }
 
-function fitText(ctx, text, maxWidth, baseSize, minSize) {
+function fitText(ctx, text, maxWidth, baseSize, minSize, font, weight) {
   let size = baseSize;
-  ctx.font = `700 ${size}px ${fontStack}`;
+  ctx.font = `${weight} ${size}px ${font}`;
   while (size > minSize && ctx.measureText(text).width > maxWidth) {
     size -= 1;
-    ctx.font = `700 ${size}px ${fontStack}`;
+    ctx.font = `${weight} ${size}px ${font}`;
   }
   return size;
 }
 
-function wrapText(ctx, text, maxWidth, baseSize, minSize) {
+function wrapText(ctx, text, maxWidth, baseSize, minSize, font, weight) {
   const words = text.split(/\s+/).filter(Boolean);
   const lines = [];
   let line = "";
@@ -72,60 +169,14 @@ function wrapText(ctx, text, maxWidth, baseSize, minSize) {
 
   for (const word of words) {
     const testLine = line ? `${line} ${word}` : word;
-    ctx.font = `700 ${size}px ${fontStack}`;
-
-    if (ctx.measureText(testLine).width <= maxWidth) {
-      line = testLine;
-      continue;
-    }
-
+    ctx.font = `${weight} ${size}px ${font}`;
+    if (ctx.measureText(testLine).width <= maxWidth) { line = testLine; continue; }
     if (line) lines.push(line);
-
-    if (ctx.measureText(word).width > maxWidth) {
-      size = fitText(ctx, word, maxWidth, size, minSize);
-    }
-
+    if (ctx.measureText(word).width > maxWidth) size = fitText(ctx, word, maxWidth, size, minSize, font, weight);
     line = word;
   }
-
   if (line) lines.push(line);
   return { lines, size };
-}
-
-function drawCoverImage(image, x, y, width, height) {
-  const sourceRatio = image.naturalWidth / image.naturalHeight;
-  const targetRatio = width / height;
-  let sx = 0;
-  let sy = 0;
-  let sw = image.naturalWidth;
-  let sh = image.naturalHeight;
-
-  if (sourceRatio > targetRatio) {
-    // Image is wider than target: crop sides equally (centre crop)
-    sw = image.naturalHeight * targetRatio;
-    sx = (image.naturalWidth - sw) / 2;
-  } else {
-    // Image is taller than target: crop from bottom only (keep top)
-    sh = image.naturalWidth / targetRatio;
-    sy = 0;
-  }
-
-  ctx.drawImage(image, sx, sy, sw, sh, x, y, width, height);
-}
-
-function drawContainedImage(image, x, y, width, height) {
-  const sourceRatio = image.naturalWidth / image.naturalHeight;
-  const targetRatio = width / height;
-  let drawWidth = width;
-  let drawHeight = height;
-
-  if (sourceRatio > targetRatio) {
-    drawHeight = width / sourceRatio;
-  } else {
-    drawWidth = height * sourceRatio;
-  }
-
-  ctx.drawImage(image, x + (width - drawWidth) / 2, y + (height - drawHeight) / 2, drawWidth, drawHeight);
 }
 
 function loadImage(src) {
@@ -144,62 +195,56 @@ function proxiedImageUrl(src) {
   return `/api/image?url=${encodeURIComponent(src)}`;
 }
 
+function drawContainedImage(image, x, y, width, height) {
+  const sourceRatio = image.naturalWidth / image.naturalHeight;
+  const targetRatio = width / height;
+  let drawWidth = width;
+  let drawHeight = height;
+  if (sourceRatio > targetRatio) { drawHeight = width / sourceRatio; }
+  else { drawWidth = height * sourceRatio; }
+  ctx.drawImage(image, x + (width - drawWidth) / 2, y + (height - drawHeight) / 2, drawWidth, drawHeight);
+}
+
 async function drawLogo(data, x, y, size) {
   if (!uploadedLogoSrc) return false;
-
   try {
     const logo = await loadImage(uploadedLogoSrc);
     drawContainedImage(logo, x, y, size, size);
     return true;
-  } catch {
-    uploadedLogoSrc = "";
-    return false;
-  }
+  } catch { uploadedLogoSrc = ""; return false; }
 }
 
-function decodeHtmlEntities(str) {
-  return str
-    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
-    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(Number(dec)))
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&apos;/g, "'")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&ndash;/g, "–")
-    .replace(/&mdash;/g, "—")
-    .replace(/&lsquo;/g, "\u2018")
-    .replace(/&rsquo;/g, "\u2019")
-    .replace(/&ldquo;/g, "\u201C")
-    .replace(/&rdquo;/g, "\u201D");
-}
-
+// ─── Draw card ────────────────────────────────────────────────────────────────
 async function drawCard(data = currentData) {
   currentData = data;
 
-  const width = 900;
-  const totalHeight = Math.round(width * 5 / 4); // overall card is 4:5
-  const imageHeight = Math.round(totalHeight / 2); // top photo fills exactly half the card
-  const trimHeight = Math.max(7, Math.round(width * 0.014));
-  const padding = Math.round(width * 0.062);
-  const gap = Math.round(width * 0.042);
+  const width       = 900;
+  const totalHeight = Math.round(width * 5 / 4);
+  const imageHeight = Math.round(totalHeight / 2);
+  const trimHeight  = Math.max(7, Math.round(width * 0.014));
+  const padding     = Math.round(width * 0.062);
+  const gap         = Math.round(width * 0.042);
   const lowerHeight = totalHeight - imageHeight - trimHeight;
 
-  const titleBase = Number(controls.titleSize.value) || Math.round(width * 0.069);
+  const titleBase     = Number(controls.titleSize.value) || Math.round(width * 0.069);
   const titleMaxWidth = width - padding * 2;
-  const rawTitle = decodeHtmlEntities(data.title || "Untitled page");
-  const logoSize = Math.round(width * 0.059);
-  const labelSize = Math.round(width * 0.043);
+  let   rawTitle      = decodeHtmlEntities(data.title || "Untitled page");
+  if (controls.titleUppercase?.checked) rawTitle = rawTitle.toUpperCase();
+
+  const logoSize       = Math.round(width * 0.059);
+  const labelSize      = Math.round(width * 0.043);
   const sourceRowHeight = uploadedLogoSrc ? logoSize : labelSize;
 
-  canvas.width = width;
+  const align = controls.textAlign?.value || "left";
+  const textX = align === "center" ? width / 2 : padding;
+
+  canvas.width  = width;
   canvas.height = totalHeight;
 
   ctx.fillStyle = controls.background.value;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+  // ── Featured image ──
   try {
     const image = await loadImage(proxiedImageUrl(data.image));
     const scale = imageHeight / image.naturalHeight;
@@ -207,14 +252,12 @@ async function drawCard(data = currentData) {
     const drawH = imageHeight;
 
     if (drawW >= width) {
-      // Image is wide enough to fill — fit to height, crop left/right per alignment
-      const align = controls.imageAlign.value;
-      const drawX = align === "left" ? 0 : align === "right" ? width - drawW : (width - drawW) / 2;
+      const imgAlign = controls.imageAlign.value;
+      const drawX = imgAlign === "left" ? 0 : imgAlign === "right" ? width - drawW : (width - drawW) / 2;
       ctx.drawImage(image, drawX, 0, drawW, drawH);
     } else {
-      // Image is too narrow — fit to width instead, crop top/bottom from top
       const scaleW = width / image.naturalWidth;
-      const fitH = image.naturalHeight * scaleW;
+      const fitH   = image.naturalHeight * scaleW;
       ctx.drawImage(image, 0, 0, width, fitH);
     }
   } catch {
@@ -222,24 +265,23 @@ async function drawCard(data = currentData) {
     ctx.fillRect(0, 0, width, imageHeight);
     ctx.fillStyle = "#8f98a5";
     ctx.font = `700 ${Math.round(width * 0.035)}px ${fontStack}`;
+    ctx.textAlign = "left";
     ctx.fillText("No featured image found", padding, imageHeight / 2);
   }
 
+  // ── Trim bar ──
   ctx.fillStyle = controls.trim.value;
   ctx.fillRect(0, imageHeight, width, trimHeight);
 
   const bodyTop = imageHeight + trimHeight;
 
-  // Draw background image behind text area if uploaded
+  // ── Background image / colour ──
   if (uploadedBgImageSrc) {
     try {
       const bgImage = await loadImage(uploadedBgImageSrc);
-      // Scale to fill height, maintain aspect ratio, align to right edge
       const scale = lowerHeight / bgImage.naturalHeight;
       const drawW = bgImage.naturalWidth * scale;
-      const drawH = lowerHeight;
-      const drawX = width - drawW; // right-aligned
-      ctx.drawImage(bgImage, drawX, bodyTop, drawW, drawH);
+      ctx.drawImage(bgImage, width - drawW, bodyTop, drawW, lowerHeight);
     } catch {
       ctx.fillStyle = controls.background.value;
       ctx.fillRect(0, bodyTop, width, lowerHeight);
@@ -249,43 +291,43 @@ async function drawCard(data = currentData) {
     ctx.fillRect(0, bodyTop, width, lowerHeight);
   }
 
-  const displayUrl = data.displayUrl || "";
+  // ── Source name ──
   const sourceTop = bodyTop + gap;
-  const hasLogo = await drawLogo(data, padding, sourceTop, logoSize);
-  const sourceX = hasLogo ? padding + logoSize + Math.round(width * 0.022) : padding;
+  const hasLogo   = await drawLogo(data, padding, sourceTop, logoSize);
+  const sourceX   = hasLogo ? padding + logoSize + Math.round(width * 0.022) : (align === "center" ? width / 2 : padding);
   const sourceBaseline = hasLogo
     ? sourceTop + Math.round(logoSize * 0.72)
     : sourceTop + labelSize;
 
-  ctx.font = `400 ${labelSize}px ${fontStack}`;
+  ctx.font      = `400 ${labelSize}px ${fontStack}`;
   ctx.fillStyle = controls.trim.value;
-  ctx.fillText(displayUrl, sourceX, sourceBaseline);
+  ctx.textAlign = hasLogo ? "left" : align;
+  ctx.fillText(data.displayUrl || "", sourceX, sourceBaseline);
 
-  const titleTop = sourceTop + sourceRowHeight + gap;
+  // ── Title ──
+  const titleTop       = sourceTop + sourceRowHeight + gap * 0.4;
   const titleAreaBottom = bodyTop + lowerHeight - padding;
 
-  // Measure and wrap title within fixed panel
-  const { lines, size } = wrapText(ctx, rawTitle, titleMaxWidth, titleBase, 20);
-  const lineHeight = Math.round(size * 1.2);
-
-  // Only draw lines that fit within the fixed text panel
-  const maxLines = Math.max(1, Math.floor((titleAreaBottom - titleTop) / lineHeight));
+  const { lines, size } = wrapText(ctx, rawTitle, titleMaxWidth, titleBase, 20, titleFont, titleWeight);
+  const lineHeight = Math.round(size * 1.0);
+  const maxLines   = Math.max(1, Math.floor((titleAreaBottom - titleTop) / lineHeight));
   const visibleLines = lines.slice(0, maxLines);
-  const isClipped = lines.length > visibleLines.length;
 
   ctx.fillStyle = controls.text.value;
-  ctx.font = `700 ${size}px ${fontStack}`;
+  ctx.font      = `${titleWeight} ${size}px ${titleFont}`;
+  ctx.textAlign = align;
   let y = titleTop + size;
   for (const line of visibleLines) {
-    ctx.fillText(line, padding, y);
+    ctx.fillText(line, textX, y);
     y += lineHeight;
   }
 
-  if (isClipped) {
+  if (lines.length > visibleLines.length) {
     setStatus("⚠️ Title is cropped — reduce the font size to fit.");
   }
 }
 
+// ─── Fetch metadata ───────────────────────────────────────────────────────────
 async function fetchMetadata(url) {
   const response = await fetch(`/api/metadata?url=${encodeURIComponent(url)}`);
   const body = await response.json();
@@ -293,32 +335,60 @@ async function fetchMetadata(url) {
   return body;
 }
 
+// ─── Tab / mode switching ─────────────────────────────────────────────────────
 function setMode(mode) {
-  tabAuto.classList.toggle("active", mode === "auto");
-  tabAuto.setAttribute("aria-selected", String(mode === "auto"));
-  tabManual.classList.toggle("active", mode === "manual");
-  tabManual.setAttribute("aria-selected", String(mode === "manual"));
-  tabTelegram.classList.toggle("active", mode === "telegram");
-  tabTelegram.setAttribute("aria-selected", String(mode === "telegram"));
-  autoPanel.hidden = mode !== "auto";
-  manualPanel.hidden = mode !== "manual";
-  telegramPanel.hidden = mode !== "telegram";
+  const isAuto     = mode === "auto";
+  const isManual   = mode === "manual";
+  const isTelegram = mode === "telegram";
 
-  if (mode === "telegram" && telegramSelect.options.length <= 1 && telegramSelect.options[0]?.value === "") {
-    loadTelegramPosts();
-  }
+  tabAuto.classList.toggle("active", isAuto);
+  tabAuto.setAttribute("aria-selected", String(isAuto));
+  tabManual.classList.toggle("active", isManual);
+  tabManual.setAttribute("aria-selected", String(isManual));
+  tabTelegram.classList.toggle("active", isTelegram);
+  tabTelegram.setAttribute("aria-selected", String(isTelegram));
+
+  autoPanel.hidden     = !isAuto;
+  manualPanel.hidden   = !isManual;
+  telegramPanel.hidden = !isTelegram;
+
+  if (isTelegram && !telegramLoaded) loadTelegramPosts();
 }
 
-tabAuto.addEventListener("click", () => setMode("auto"));
-tabManual.addEventListener("click", () => setMode("manual"));
+tabAuto.addEventListener("click",     () => setMode("auto"));
+tabManual.addEventListener("click",   () => setMode("manual"));
 tabTelegram.addEventListener("click", () => setMode("telegram"));
 
-// Manual form submit
+// ─── Auto tab: url form ───────────────────────────────────────────────────────
+form.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  setStatus("Reading the page…");
+  try {
+    const metadata = await fetchMetadata(urlInput.value);
+    autoSource.value = metadata.displayUrl || metadata.siteName || "";
+    autoTitle.value  = metadata.title || "";
+    autoFields.hidden = false;
+    setStatus("Drawing the card…");
+    await drawCard(metadata);
+    setStatus("Card ready.");
+  } catch (error) {
+    setStatus(error instanceof Error ? error.message : "Something went wrong.");
+  }
+});
+
+autoSource.addEventListener("input", () => {
+  drawCard({ ...currentData, displayUrl: autoSource.value });
+});
+autoTitle.addEventListener("input", () => {
+  drawCard({ ...currentData, title: autoTitle.value });
+});
+
+// ─── Manual tab ───────────────────────────────────────────────────────────────
 manualForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const source = manualSource.value.trim() || "source.com";
-  const title = manualTitle.value.trim() || "Untitled";
-  const file = manualImageUpload.files?.[0];
+  const title  = manualTitle.value.trim() || "Untitled";
+  const file   = manualImageUpload.files?.[0];
 
   const getImageSrc = () => new Promise((resolve) => {
     if (!file) { resolve(defaultData.image); return; }
@@ -327,246 +397,104 @@ manualForm.addEventListener("submit", async (event) => {
     reader.readAsDataURL(file);
   });
 
-  setStatus("Drawing the card...");
+  setStatus("Drawing the card…");
   const imageSrc = await getImageSrc();
   await drawCard({ displayUrl: source, title, image: imageSrc });
   setStatus("Card ready.");
 });
 
-form.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  setStatus("Reading the page...");
-
-  try {
-    const metadata = await fetchMetadata(urlInput.value);
-    setStatus("Drawing the card...");
-    await drawCard(metadata);
-    setStatus("Card ready.");
-  } catch (error) {
-    setStatus(error instanceof Error ? error.message : "Something went wrong.");
-  }
-});
-
-// ── Telegram tab ─────────────────────────────────────────
-let telegramPosts = [];
-let telegramCurrentImageUrl = "";
-
+// ─── Telegram tab ─────────────────────────────────────────────────────────────
 async function loadTelegramPosts() {
+  telegramSelect.innerHTML = "<option value=''>Loading…</option>";
   telegramSelect.disabled = true;
-  telegramSelect.innerHTML = '<option value="">Loading…</option>';
+  telegramFields.hidden = true;
   setStatus("Fetching Telegram posts…");
 
   try {
-    const response = await fetch("/api/telegram");
-    const data = await response.json();
+    const res = await fetch("/api/telegram");
+    const posts = await res.json();
 
-    if (!response.ok) {
-      setStatus(data.error || "Could not load Telegram posts.");
-      telegramSelect.innerHTML = '<option value="">Failed to load — try refreshing</option>';
-      telegramSelect.disabled = false;
-      return;
-    }
-
-    telegramPosts = data;
-
-    if (telegramPosts.length === 0) {
-      telegramSelect.innerHTML = '<option value="">No posts found</option>';
-      telegramSelect.disabled = false;
+    if (!res.ok) throw new Error(posts.error || "Could not load posts.");
+    if (!Array.isArray(posts) || posts.length === 0) {
+      telegramSelect.innerHTML = "<option value=''>No posts found</option>";
       setStatus("No Telegram posts found.");
+      telegramLoaded = true;
+      telegramSelect.disabled = false;
       return;
     }
 
-    telegramSelect.innerHTML = '<option value="">— Select a post —</option>' +
-      telegramPosts.map((p, i) =>
-        `<option value="${i}">${p.title.length > 80 ? p.title.slice(0, 80) + "…" : p.title}</option>`
-      ).join("");
+    telegramSelect.innerHTML = "<option value=''>— Select a post —</option>";
+    for (const post of posts) {
+      const opt = document.createElement("option");
+      opt.value = post.messageId;
+      opt.textContent = post.title.slice(0, 80) + (post.title.length > 80 ? "…" : "");
+      opt.dataset.title   = post.title;
+      opt.dataset.source  = post.source;
+      opt.dataset.imageUrl = post.imageUrl;
+      telegramSelect.append(opt);
+    }
 
+    telegramLoaded = true;
     telegramSelect.disabled = false;
-    setStatus(`Loaded ${telegramPosts.length} posts.`);
+    setStatus("Ready.");
   } catch (err) {
-    setStatus("Could not reach Telegram API.");
-    telegramSelect.innerHTML = '<option value="">Failed to load — try refreshing</option>';
+    telegramSelect.innerHTML = "<option value=''>Failed to load</option>";
     telegramSelect.disabled = false;
+    setStatus(err.message || "Could not load Telegram posts.");
   }
 }
 
-telegramSelect.addEventListener("change", () => {
-  const idx = telegramSelect.value;
-  if (idx === "" || idx === null) {
-    telegramTitleInput.value = "";
-    telegramSourceInput.value = "";
-    telegramCurrentImageUrl = "";
-    return;
-  }
-  const post = telegramPosts[Number(idx)];
-  if (!post) return;
-  telegramTitleInput.value = post.title;
-  telegramSourceInput.value = post.source;
-  telegramCurrentImageUrl = post.imageUrl;
-});
-
 telegramRefresh.addEventListener("click", () => {
-  telegramPosts = [];
-  telegramCurrentImageUrl = "";
-  telegramTitleInput.value = "";
-  telegramSourceInput.value = "";
+  telegramLoaded = false;
   loadTelegramPosts();
 });
 
+telegramSelect.addEventListener("change", () => {
+  const selected = telegramSelect.options[telegramSelect.selectedIndex];
+  if (!selected || !selected.value) { telegramFields.hidden = true; return; }
+
+  telegramTitle.value  = selected.dataset.title || "";
+  telegramSource.value = selected.dataset.source || "";
+  telegramImageUrl     = selected.dataset.imageUrl || "";
+  telegramFields.hidden = false;
+});
+
 telegramGenerate.addEventListener("click", async () => {
-  const title = telegramTitleInput.value.trim();
-  const source = telegramSourceInput.value.trim();
-  if (!title) {
-    setStatus("Select a post first.");
-    return;
-  }
+  const title  = telegramTitle.value.trim();
+  const source = telegramSource.value.trim();
+  if (!title) { setStatus("Please enter a title."); return; }
   setStatus("Drawing the card…");
-  const imageUrl = telegramCurrentImageUrl
-    ? `/api/image?url=${encodeURIComponent(telegramCurrentImageUrl)}`
-    : defaultData.image;
-  await drawCard({ displayUrl: source || "gaelicgamesnews", title, image: imageUrl });
+  await drawCard({
+    displayUrl: source,
+    title,
+    image: telegramImageUrl ? proxiedImageUrl(telegramImageUrl) : defaultData.image
+  });
   setStatus("Card ready.");
 });
 
-// Live redraw when title/source inputs change
-telegramTitleInput.addEventListener("input", () => {
-  if (!telegramTitleInput.value.trim()) return;
-  const imageUrl = telegramCurrentImageUrl
-    ? `/api/image?url=${encodeURIComponent(telegramCurrentImageUrl)}`
-    : defaultData.image;
-  drawCard({ displayUrl: telegramSourceInput.value.trim() || "gaelicgamesnews", title: telegramTitleInput.value, image: imageUrl });
+telegramTitle.addEventListener("input",  () => {
+  if (!telegramTitle.value) return;
+  drawCard({ displayUrl: telegramSource.value, title: telegramTitle.value, image: telegramImageUrl ? proxiedImageUrl(telegramImageUrl) : defaultData.image });
+});
+telegramSource.addEventListener("input", () => {
+  drawCard({ displayUrl: telegramSource.value, title: telegramTitle.value, image: telegramImageUrl ? proxiedImageUrl(telegramImageUrl) : defaultData.image });
 });
 
-telegramSourceInput.addEventListener("input", () => {
-  if (!telegramTitleInput.value.trim()) return;
-  const imageUrl = telegramCurrentImageUrl
-    ? `/api/image?url=${encodeURIComponent(telegramCurrentImageUrl)}`
-    : defaultData.image;
-  drawCard({ displayUrl: telegramSourceInput.value.trim() || "gaelicgamesnews", title: telegramTitleInput.value, image: imageUrl });
-});
-
-resetButton.addEventListener("click", async () => {
-  urlInput.value = "";
-  manualImageUpload.value = "";
-  manualSource.value = "";
-  manualTitle.value = "";
-  controls.titleSize.value = defaultControls.titleSize;
-  controls.background.value = defaultControls.background;
-  controls.text.value = defaultControls.text;
-  controls.trim.value = defaultControls.trim;
-  controls.logoUpload.value = "";
-  controls.bgImageUpload.value = "";
-  uploadedLogoSrc = "";
-  uploadedBgImageSrc = "";
-  telegramPosts = [];
-  telegramCurrentImageUrl = "";
-  telegramTitleInput.value = "";
-  telegramSourceInput.value = "";
-  telegramSelect.innerHTML = '<option value="">Loading posts…</option>';
-  await drawCard({ ...defaultData });
-  setStatus("Reset.");
-});
-
-// ── Helpers ───────────────────────────────────────────────
-function isPwa() {
-  return window.matchMedia("(display-mode: standalone)").matches ||
-    window.navigator.standalone === true;
+// ─── Settings controls ────────────────────────────────────────────────────────
+for (const control of [controls.titleSize, controls.imageAlign, controls.textAlign]) {
+  control?.addEventListener("input", () => drawCard(currentData));
 }
 
-async function getImageBlob() {
-  return new Promise((res, rej) =>
-    canvas.toBlob(b => b ? res(b) : rej(new Error("Could not generate image")), "image/png")
-  );
-}
-
-// ── Save / Download button ────────────────────────────────
-downloadButton.addEventListener("click", async () => {
-  const filename = "link-preview-card.png";
-
-  // When running as installed PWA on iOS, use Web Share API —
-  // this is the only path that surfaces "Save Image" in the share sheet
-  if (isPwa() && navigator.canShare) {
-    try {
-      const blob = await getImageBlob();
-      const file = new File([blob], filename, { type: "image/png" });
-      if (navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: "Link Preview Card" });
-        return;
-      }
-    } catch (err) {
-      if (err.name === "AbortError") return; // user cancelled — do nothing
-      // fall through to regular download
-    }
-  }
-
-  // Desktop / non-PWA: standard anchor download
-  const dataUrl = canvas.toDataURL("image/png");
-  const link = document.createElement("a");
-  link.download = filename;
-  link.href = dataUrl;
-  link.click();
-});
-
-function triggerDownload() {
-  const dataUrl = canvas.toDataURL("image/png");
-  const link = document.createElement("a");
-  link.download = "link-preview-card.png";
-  link.href = dataUrl;
-  link.click();
-}
-
-// ── Share modal ───────────────────────────────────────────
-const shareButton      = document.querySelector("#shareButton");
-const shareOverlay     = document.querySelector("#shareOverlay");
-const shareClose       = document.querySelector("#shareClose");
-const sharePreviewImg  = document.querySelector("#sharePreviewImg");
-const shareDownloadBtn = document.querySelector("#shareDownloadBtn");
-
-function openShareModal() {
-  sharePreviewImg.src = canvas.toDataURL("image/png");
-  shareOverlay.hidden = false;
-  document.body.style.overflow = "hidden";
-}
-
-function closeShareModal() {
-  shareOverlay.hidden = true;
-  document.body.style.overflow = "";
-}
-
-shareButton.addEventListener("click", openShareModal);
-shareClose.addEventListener("click", closeShareModal);
-shareDownloadBtn.addEventListener("click", () => { triggerDownload(); closeShareModal(); });
-
-// Close on backdrop click
-shareOverlay.addEventListener("click", (e) => {
-  if (e.target === shareOverlay) closeShareModal();
-});
-
-// Close on Escape
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && !shareOverlay.hidden) closeShareModal();
-});
-
-
-
-for (const control of [controls.titleSize, controls.background, controls.text, controls.trim, controls.imageAlign]) {
-  control.addEventListener("input", () => drawCard(currentData));
-}
+controls.titleUppercase?.addEventListener("change", () => drawCard(currentData));
 
 controls.logoUpload.addEventListener("change", () => {
   const file = controls.logoUpload.files?.[0];
-  if (!file) {
-    uploadedLogoSrc = "";
-    drawCard(currentData);
-    return;
-  }
-
+  if (!file) { uploadedLogoSrc = ""; drawCard(currentData); return; }
   if (file.type !== "image/png" && file.type !== "image/svg+xml") {
     controls.logoUpload.value = "";
     setStatus("Please upload a PNG or SVG logo.");
     return;
   }
-
   const reader = new FileReader();
   reader.addEventListener("load", async () => {
     uploadedLogoSrc = typeof reader.result === "string" ? reader.result : "";
@@ -578,12 +506,7 @@ controls.logoUpload.addEventListener("change", () => {
 
 controls.bgImageUpload.addEventListener("change", () => {
   const file = controls.bgImageUpload.files?.[0];
-  if (!file) {
-    uploadedBgImageSrc = "";
-    drawCard(currentData);
-    return;
-  }
-
+  if (!file) { uploadedBgImageSrc = ""; drawCard(currentData); return; }
   const reader = new FileReader();
   reader.addEventListener("load", async () => {
     uploadedBgImageSrc = typeof reader.result === "string" ? reader.result : "";
@@ -593,4 +516,66 @@ controls.bgImageUpload.addEventListener("change", () => {
   reader.readAsDataURL(file);
 });
 
+// Stepper buttons
+document.querySelector("#titleSizeMinus")?.addEventListener("click", () => {
+  const v = Number(controls.titleSize.value); if (v > 20) { controls.titleSize.value = v - 1; drawCard(currentData); }
+});
+document.querySelector("#titleSizePlus")?.addEventListener("click", () => {
+  const v = Number(controls.titleSize.value); if (v < 200) { controls.titleSize.value = v + 1; drawCard(currentData); }
+});
+
+// ─── Reset ────────────────────────────────────────────────────────────────────
+resetButton.addEventListener("click", async () => {
+  urlInput.value = "";
+  autoSource.value = "";
+  autoTitle.value = "";
+  autoFields.hidden = true;
+  manualImageUpload.value = "";
+  manualSource.value = "";
+  manualTitle.value = "";
+  telegramSelect.value = "";
+  telegramTitle.value = "";
+  telegramSource.value = "";
+  telegramImageUrl = "";
+  telegramFields.hidden = true;
+  controls.titleSize.value = "58";
+  controls.titleUppercase.checked = false;
+  controls.textAlign.value = "left";
+  controls.imageAlign.value = "center";
+  controls.logoUpload.value = "";
+  controls.bgImageUpload.value = "";
+  uploadedLogoSrc = "";
+  uploadedBgImageSrc = "";
+  // Reset colour pickers to defaults
+  buildColourPicker("backgroundSelect", "backgroundDropdown", "backgroundDot", "backgroundName", "background", "#000000");
+  buildColourPicker("textSelect",       "textDropdown",       "textDot",       "textName",       "text",       "#ffffff");
+  buildColourPicker("trimSelect",       "trimDropdown",       "trimDot",       "trimName",       "trim",       "#FFCC00");
+  await drawCard({ ...defaultData });
+  setStatus("Reset.");
+});
+
+// ─── Download ─────────────────────────────────────────────────────────────────
+const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+if (isMobile) {
+  downloadButton.textContent = "🖼 OPEN IMAGE";
+  downloadButton.addEventListener("click", () => {
+    const dataUrl = canvas.toDataURL("image/png");
+    const win = window.open("", "_blank");
+    if (win) {
+      win.document.write(`<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Preview</title><style>body{margin:0;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;min-height:100vh;padding:12px;box-sizing:border-box}img{max-width:100%;border-radius:4px}p{color:#fff;font-family:sans-serif;font-size:14px;margin:12px 0 0;text-align:center}button{margin-top:16px;padding:10px 24px;background:#fff;border:0;border-radius:6px;font-weight:700;cursor:pointer;font-size:15px}</style></head><body><img src="${dataUrl}"><p>Hold image → Save to Photos</p><button onclick="window.close()">✕ Close</button></body></html>`);
+      win.document.close();
+    }
+  });
+} else {
+  downloadButton.textContent = "⬇ DOWNLOAD IMAGE";
+  downloadButton.addEventListener("click", () => {
+    const link = document.createElement("a");
+    link.download = "link-preview-card.png";
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  });
+}
+
+// ─── Initial draw ─────────────────────────────────────────────────────────────
 document.fonts?.ready.then(() => drawCard()) || drawCard();
