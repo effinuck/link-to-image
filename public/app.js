@@ -65,24 +65,35 @@ let telegramImageUrl   = "";
 let telegramLoaded     = false;
 
 // ─── Colour picker ────────────────────────────────────────────────────────────
-function buildColourPicker(triggerId, dropdownId, dotId, nameId, controlKey, defaultHex) {
+function buildColourPicker(triggerId, dropdownId, dotId, nameId, controlKey, defaultHex, redraw = false) {
   const trigger  = document.getElementById(triggerId);
   const dropdown = document.getElementById(dropdownId);
   const dot      = document.getElementById(dotId);
   const nameEl   = document.getElementById(nameId);
+
+  function closeDropdown() {
+    dropdown.hidden = true;
+    trigger.setAttribute("aria-expanded", "false");
+  }
 
   function select(colour) {
     controls[controlKey].value = colour.hex;
     dot.style.background = colour.hex;
     dot.style.outline = colour.hex === "#ffffff" ? "1px solid #555" : "none";
     nameEl.textContent = colour.name;
-    dropdown.hidden = true;
-    trigger.setAttribute("aria-expanded", "false");
-    drawCard(currentData);
+    closeDropdown();
+    if (redraw) drawCard(currentData);
   }
 
   function openDropdown() {
-    // Build items
+    // Close any other open dropdowns first
+    document.querySelectorAll(".colour-dropdown").forEach(d => {
+      if (d !== dropdown) d.hidden = true;
+    });
+    document.querySelectorAll(".colour-select").forEach(t => {
+      if (t !== trigger) t.setAttribute("aria-expanded", "false");
+    });
+
     dropdown.innerHTML = "";
     for (const colour of COLOURS) {
       const item = document.createElement("div");
@@ -96,7 +107,7 @@ function buildColourPicker(triggerId, dropdownId, dotId, nameId, controlKey, def
       const n = document.createElement("span");
       n.textContent = colour.name;
       item.append(d, n);
-      item.addEventListener("click", () => select(colour));
+      item.addEventListener("click", e => { e.stopPropagation(); select(colour); });
       item.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(colour); } });
       dropdown.append(item);
     }
@@ -104,25 +115,30 @@ function buildColourPicker(triggerId, dropdownId, dotId, nameId, controlKey, def
     trigger.setAttribute("aria-expanded", "true");
   }
 
-  trigger.addEventListener("click", () => {
-    if (dropdown.hidden) openDropdown(); else { dropdown.hidden = true; trigger.setAttribute("aria-expanded", "false"); }
+  trigger.addEventListener("click", e => {
+    e.stopPropagation();
+    if (dropdown.hidden) openDropdown(); else closeDropdown();
   });
   trigger.addEventListener("keydown", e => {
-    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); if (dropdown.hidden) openDropdown(); else { dropdown.hidden = true; trigger.setAttribute("aria-expanded", "false"); } }
-  });
-
-  // Close on outside click
-  document.addEventListener("click", e => {
-    if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
-      dropdown.hidden = true;
-      trigger.setAttribute("aria-expanded", "false");
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      if (dropdown.hidden) openDropdown(); else closeDropdown();
     }
   });
 
-  // Set initial
+  // Set initial value only — no redraw yet
   const initial = COLOURS.find(c => c.hex.toLowerCase() === defaultHex.toLowerCase()) || COLOURS[0];
-  select(initial);
+  controls[controlKey].value = initial.hex;
+  dot.style.background = initial.hex;
+  dot.style.outline = initial.hex === "#ffffff" ? "1px solid #555" : "none";
+  nameEl.textContent = initial.name;
 }
+
+// Single document-level click handler to close all dropdowns
+document.addEventListener("click", () => {
+  document.querySelectorAll(".colour-dropdown").forEach(d => d.hidden = true);
+  document.querySelectorAll(".colour-select").forEach(t => t.setAttribute("aria-expanded", "false"));
+});
 
 buildColourPicker("backgroundSelect", "backgroundDropdown", "backgroundDot", "backgroundName", "background", "#000000");
 buildColourPicker("textSelect",       "textDropdown",       "textDot",       "textName",       "text",       "#ffffff");
@@ -132,7 +148,7 @@ buildColourPicker("trimSelect",       "trimDropdown",       "trimDot",       "tr
 const defaultData = {
   displayUrl: "sitename.com",
   title: "Title of the webpage or article will appear here",
-  image: "/sample-article-image"
+  image: "/sample-image.svg"
 };
 
 let currentData = { ...defaultData };
@@ -362,17 +378,20 @@ tabTelegram.addEventListener("click", () => setMode("telegram"));
 // ─── Auto tab: url form ───────────────────────────────────────────────────────
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
+  const url = urlInput.value.trim();
+  if (!url) return;
   setStatus("Reading the page…");
   try {
-    const metadata = await fetchMetadata(urlInput.value);
-    autoSource.value = metadata.displayUrl || metadata.siteName || "";
-    autoTitle.value  = metadata.title || "";
+    const metadata = await fetchMetadata(url);
+    if (!metadata || typeof metadata !== "object") throw new Error("No data returned.");
+    autoSource.value  = metadata.displayUrl || metadata.siteName || "";
+    autoTitle.value   = metadata.title || "";
     autoFields.hidden = false;
     setStatus("Drawing the card…");
     await drawCard(metadata);
     setStatus("Card ready.");
   } catch (error) {
-    setStatus(error instanceof Error ? error.message : "Something went wrong.");
+    setStatus("⚠️ " + (error instanceof Error ? error.message : "Something went wrong."));
   }
 });
 
@@ -547,9 +566,17 @@ resetButton.addEventListener("click", async () => {
   uploadedLogoSrc = "";
   uploadedBgImageSrc = "";
   // Reset colour pickers to defaults
-  buildColourPicker("backgroundSelect", "backgroundDropdown", "backgroundDot", "backgroundName", "background", "#000000");
-  buildColourPicker("textSelect",       "textDropdown",       "textDot",       "textName",       "text",       "#ffffff");
-  buildColourPicker("trimSelect",       "trimDropdown",       "trimDot",       "trimName",       "trim",       "#FFCC00");
+  function resetPicker(controlKey, hex, dotId, nameId) {
+    const colour = COLOURS.find(c => c.hex.toLowerCase() === hex.toLowerCase()) || COLOURS[0];
+    controls[controlKey].value = colour.hex;
+    const dot = document.getElementById(dotId);
+    const nameEl = document.getElementById(nameId);
+    if (dot) { dot.style.background = colour.hex; dot.style.outline = colour.hex === "#ffffff" ? "1px solid #555" : "none"; }
+    if (nameEl) nameEl.textContent = colour.name;
+  }
+  resetPicker("background", "#000000", "backgroundDot", "backgroundName");
+  resetPicker("text",       "#ffffff", "textDot",       "textName");
+  resetPicker("trim",       "#FFCC00", "trimDot",       "trimName");
   await drawCard({ ...defaultData });
   setStatus("Reset.");
 });
