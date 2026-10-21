@@ -46,6 +46,8 @@ const controls = {
   imageAlign:     document.querySelector("#imageAlign"),
   textAlign:      document.querySelector("#textAlign"),
   titleCase:      document.querySelector("#titleCase"),
+  layoutOrder:    document.querySelector("#layoutOrder"),
+  imageFit:       document.querySelector("#imageFit"),
   titleFit:       document.querySelector("#titleFit"),
   logoUpload:     document.querySelector("#logoUpload"),
   bgImageUpload:  document.querySelector("#bgImageUpload"),
@@ -234,86 +236,128 @@ async function drawLogo(data, x, y, size) {
 async function drawCard(data = currentData) {
   currentData = data;
 
-  const width       = 900;
-  const totalHeight = Math.round(width * 5 / 4);
-  const imageHeight = Math.round(totalHeight / 2);
-  const trimHeight  = Math.max(7, Math.round(width * 0.014));
-  const padding     = Math.round(width * 0.062);
-  const gap         = Math.round(width * 0.042);
-  const lowerHeight = totalHeight - imageHeight - trimHeight;
+  const width      = 900;
+  const trimHeight = Math.max(7, Math.round(width * 0.014));
+  const padding    = Math.round(width * 0.062);
+  const gap        = Math.round(width * 0.042);
 
   const titleBase     = Number(controls.titleSize.value) || Math.round(width * 0.069);
   const titleMaxWidth = width - padding * 2;
   let   rawTitle      = decodeHtmlEntities(data.title || "Untitled page");
   if (!controls.titleCase || controls.titleCase.value !== "lower") rawTitle = rawTitle.toUpperCase();
 
-  const logoSize       = Math.round(width * 0.059);
-  const labelSize      = Math.round(width * 0.043);
+  const logoSize        = Math.round(width * 0.059);
+  const labelSize       = Math.round(width * 0.043);
   const sourceRowHeight = uploadedLogoSrc ? logoSize : labelSize;
 
-  const align = controls.textAlign?.value || "left";
-  const textX = align === "center" ? width / 2 : padding;
+  const align  = controls.textAlign?.value || "left";
+  const textX  = align === "center" ? width / 2 : padding;
+  const textTop = gap;
+
+  const layoutFlipped = controls.layoutOrder?.value === "text-top";
+  const imageFitFull  = controls.imageFit?.value === "full";
+
+  // ── Fixed canvas size always 4:5 ──
+  const totalHeight = Math.round(width * 5 / 4);
 
   canvas.width  = width;
   canvas.height = totalHeight;
 
+  // ── Determine image dimensions ──
+  let loadedImage = null;
+  try {
+    loadedImage = await loadImage(proxiedImageUrl(data.image));
+  } catch { /* handled below */ }
+
+  let imageHeight;
+  if (imageFitFull && loadedImage) {
+    // Scale image to full width, use natural proportional height, capped so text area has a minimum
+    const naturalScaledH = Math.round(loadedImage.naturalHeight * (width / loadedImage.naturalWidth));
+    const minTextArea    = Math.round(totalHeight * 0.25); // at least 25% for text
+    imageHeight = Math.min(naturalScaledH, totalHeight - trimHeight - minTextArea);
+  } else {
+    // Default: half the canvas
+    imageHeight = Math.round(totalHeight / 2);
+  }
+
+  const textAreaHeight = totalHeight - imageHeight - trimHeight;
+
+  // Pre-measure title
+  ctx.font = `${titleWeight} ${titleBase}px ${titleFont}`;
+  const { lines, size } = wrapText(ctx, rawTitle, titleMaxWidth, titleBase, 20, titleFont, titleWeight);
+  const lineHeight = Math.round(size * 1.0);
+
+  // ── Determine y positions based on layout order ──
+  let imageY, trimY, textAreaY;
+  if (layoutFlipped) {
+    // Text on top, trim in middle, image at bottom
+    textAreaY = 0;
+    trimY     = textAreaHeight;
+    imageY    = textAreaHeight + trimHeight;
+  } else {
+    // Image on top, trim in middle, text at bottom (default)
+    imageY    = 0;
+    trimY     = imageHeight;
+    textAreaY = imageHeight + trimHeight;
+  }
+
+  // ── Fill canvas background ──
   ctx.fillStyle = controls.background.value;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillRect(0, 0, width, totalHeight);
 
   // ── Featured image ──
-  try {
-    const image = await loadImage(proxiedImageUrl(data.image));
-    const scale = imageHeight / image.naturalHeight;
-    const drawW = image.naturalWidth * scale;
-    const drawH = imageHeight;
-
-    if (drawW >= width) {
-      const imgAlign = controls.imageAlign.value;
-      const drawX = imgAlign === "left" ? 0 : imgAlign === "right" ? width - drawW : (width - drawW) / 2;
-      ctx.drawImage(image, drawX, 0, drawW, drawH);
+  if (loadedImage) {
+    if (imageFitFull) {
+      // Draw full image scaled to width
+      ctx.drawImage(loadedImage, 0, imageY, width, imageHeight);
     } else {
-      const scaleW = width / image.naturalWidth;
-      const fitH   = image.naturalHeight * scaleW;
-      ctx.drawImage(image, 0, 0, width, fitH);
+      // Crop: scale to fill height, align horizontally
+      const scale = imageHeight / loadedImage.naturalHeight;
+      const drawW = loadedImage.naturalWidth * scale;
+      if (drawW >= width) {
+        const imgAlign = controls.imageAlign?.value || "center";
+        const drawX = imgAlign === "left" ? 0 : imgAlign === "right" ? width - drawW : (width - drawW) / 2;
+        ctx.drawImage(loadedImage, drawX, imageY, drawW, imageHeight);
+      } else {
+        const scaleW = width / loadedImage.naturalWidth;
+        const fitH   = loadedImage.naturalHeight * scaleW;
+        ctx.drawImage(loadedImage, 0, imageY, width, fitH);
+      }
     }
-  } catch {
+  } else {
     ctx.fillStyle = "#20242b";
-    ctx.fillRect(0, 0, width, imageHeight);
+    ctx.fillRect(0, imageY, width, imageHeight);
     ctx.fillStyle = "#8f98a5";
     ctx.font = `700 ${Math.round(width * 0.035)}px ${fontStack}`;
     ctx.textAlign = "left";
-    ctx.fillText("No featured image found", padding, imageHeight / 2);
+    ctx.fillText("No featured image found", padding, imageY + imageHeight / 2);
   }
 
   // ── Trim bar ──
   ctx.fillStyle = controls.trim.value;
-  ctx.fillRect(0, imageHeight, width, trimHeight);
+  ctx.fillRect(0, trimY, width, trimHeight);
 
-  const bodyTop = imageHeight + trimHeight;
-
-  // ── Background image / colour ──
+  // ── Background image / colour behind text area ──
   if (uploadedBgImageSrc) {
     try {
       const bgImage = await loadImage(uploadedBgImageSrc);
-      const scale = lowerHeight / bgImage.naturalHeight;
+      const scale = textAreaHeight / bgImage.naturalHeight;
       const drawW = bgImage.naturalWidth * scale;
-      ctx.drawImage(bgImage, width - drawW, bodyTop, drawW, lowerHeight);
+      ctx.drawImage(bgImage, width - drawW, textAreaY, drawW, textAreaHeight);
     } catch {
       ctx.fillStyle = controls.background.value;
-      ctx.fillRect(0, bodyTop, width, lowerHeight);
+      ctx.fillRect(0, textAreaY, width, textAreaHeight);
     }
   } else {
     ctx.fillStyle = controls.background.value;
-    ctx.fillRect(0, bodyTop, width, lowerHeight);
+    ctx.fillRect(0, textAreaY, width, textAreaHeight);
   }
 
   // ── Source name ──
-  const sourceTop = bodyTop + gap;
-  const hasLogo   = await drawLogo(data, padding, sourceTop, logoSize);
-  const sourceX   = hasLogo ? padding + logoSize + Math.round(width * 0.022) : (align === "center" ? width / 2 : padding);
-  const sourceBaseline = hasLogo
-    ? sourceTop + Math.round(logoSize * 0.72)
-    : sourceTop + labelSize;
+  const sourceTop      = textAreaY + gap;
+  const hasLogo        = await drawLogo(data, padding, sourceTop, logoSize);
+  const sourceX        = hasLogo ? padding + logoSize + Math.round(width * 0.022) : (align === "center" ? width / 2 : padding);
+  const sourceBaseline = hasLogo ? sourceTop + Math.round(logoSize * 0.72) : sourceTop + labelSize;
 
   ctx.font      = `400 ${labelSize}px ${fontStack}`;
   ctx.fillStyle = controls.trim.value;
@@ -321,13 +365,12 @@ async function drawCard(data = currentData) {
   ctx.fillText(data.displayUrl || "", sourceX, sourceBaseline);
 
   // ── Title ──
-  const titleTop       = sourceTop + sourceRowHeight + gap * 0.4;
-  const titleAreaBottom = bodyTop + lowerHeight - padding;
+  const titleTop        = sourceTop + sourceRowHeight + gap * 0.4;
+  const titleAreaBottom = textAreaY + textAreaHeight - padding;
 
-  const { lines, size } = wrapText(ctx, rawTitle, titleMaxWidth, titleBase, 20, titleFont, titleWeight);
-  const lineHeight = Math.round(size * 1.0);
-  const maxLines   = Math.max(1, Math.floor((titleAreaBottom - titleTop) / lineHeight));
+  const maxLines     = Math.max(1, Math.floor((titleAreaBottom - titleTop) / lineHeight));
   const visibleLines = lines.slice(0, maxLines);
+
 
   ctx.fillStyle = controls.text.value;
   ctx.font      = `${titleWeight} ${size}px ${titleFont}`;
@@ -500,7 +543,7 @@ telegramSource.addEventListener("input", () => {
 });
 
 // ─── Settings controls ────────────────────────────────────────────────────────
-for (const control of [controls.titleSize, controls.imageAlign, controls.textAlign, controls.titleCase]) {
+for (const control of [controls.titleSize, controls.imageAlign, controls.textAlign, controls.titleCase, controls.layoutOrder, controls.imageFit]) {
   control?.addEventListener("input", () => drawCard(currentData));
 }
 
@@ -555,10 +598,12 @@ resetButton.addEventListener("click", async () => {
   telegramSource.value = "";
   telegramImageUrl = "";
   telegramFields.hidden = true;
-  controls.titleSize.value = "58";
-  controls.titleCase.value = "upper";
-  controls.textAlign.value = "left";
-  controls.imageAlign.value = "center";
+  controls.titleSize.value   = "58";
+  controls.titleCase.value   = "upper";
+  controls.textAlign.value   = "left";
+  controls.imageAlign.value  = "center";
+  controls.layoutOrder.value = "image-top";
+  controls.imageFit.value    = "crop";
   controls.logoUpload.value = "";
   controls.bgImageUpload.value = "";
   uploadedLogoSrc = "";

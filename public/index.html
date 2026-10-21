@@ -25,7 +25,7 @@
         </div>
 
         <div class="tabs" role="tablist">
-          <button class="tab active" id="tabAuto" role="tab" aria-selected="true" type="button">Auto</button>
+          <button class="tab active" id="tabAuto" role="tab" aria-selected="true" type="button">Auto-generate</button>
           <button class="tab" id="tabManual" role="tab" aria-selected="false" type="button">Manual</button>
           <button class="tab" id="tabTelegram" role="tab" aria-selected="false" type="button">Telegram</button>
         </div>
@@ -137,6 +137,22 @@
           <label class="span-full">
             Text Background Image
             <input id="bgImageUpload" type="file" accept="image/*">
+          </label>
+
+          <!-- Layout | Image Fit -->
+          <label>
+            Layout
+            <select id="layoutOrder">
+              <option value="image-top">Image top</option>
+              <option value="text-top">Text top</option>
+            </select>
+          </label>
+          <label>
+            Image Fit
+            <select id="imageFit">
+              <option value="crop">Cropped</option>
+              <option value="full">Full image</option>
+            </select>
           </label>
 
           <!-- Title Size + Case -->
