@@ -231,7 +231,7 @@ function drawContainedImage(image, x, y, width, height) {
 
 async function drawLogoOnTrim(trimY, trimHeight, layoutFlipped, width, padding, imageY) {
   if (controls.logoDisplay?.value !== "on") return;
-  const logoSize = Math.round(width * 0.104); // 0.13 × 0.8 = 20% smaller
+  const logoSize = Math.round(width * 0.083); // 0.104 × 0.8 = further 20% smaller
   const logoX    = padding;                   // always top-left of image
   const logoY    = imageY + padding;          // top of image + same margin as text
   try {
