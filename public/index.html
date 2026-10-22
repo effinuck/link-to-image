@@ -25,7 +25,7 @@
         </div>
 
         <div class="tabs" role="tablist">
-          <button class="tab active" id="tabAuto" role="tab" aria-selected="true" type="button">Auto-generate</button>
+          <button class="tab active" id="tabAuto" role="tab" aria-selected="true" type="button">Auto</button>
           <button class="tab" id="tabManual" role="tab" aria-selected="false" type="button">Manual</button>
           <button class="tab" id="tabTelegram" role="tab" aria-selected="false" type="button">Telegram</button>
         </div>
@@ -110,7 +110,7 @@
             <div class="colour-dropdown" id="trimDropdown" hidden></div>
           </div>
 
-          <!-- Text Align | Image Align -->
+          <!-- Text Align | Logo Display -->
           <div class="title-options">
             <label>
               Text Align
@@ -120,20 +120,14 @@
               </select>
             </label>
             <label>
-              Image Align
-              <select id="imageAlign">
-                <option value="center">Centre</option>
-                <option value="left">Left</option>
-                <option value="right">Right</option>
+              Logo Display
+              <select id="logoDisplay">
+                <option value="off">LOGO OFF</option>
+                <option value="on">LOGO ON</option>
               </select>
             </label>
           </div>
 
-          <!-- Logo toggle (span full) -->
-          <label class="checkbox-label span-full">
-            <input type="checkbox" id="logoToggle">
-            Show Logo
-          </label>
           <label class="span-full">
             Text Background Image
             <input id="bgImageUpload" type="file" accept="image/*">

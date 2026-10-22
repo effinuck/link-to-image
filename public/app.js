@@ -43,13 +43,12 @@ const ctx             = canvas.getContext("2d");
 
 const controls = {
   titleSize:      document.querySelector("#titleSize"),
-  imageAlign:     document.querySelector("#imageAlign"),
   textAlign:      document.querySelector("#textAlign"),
   titleCase:      document.querySelector("#titleCase"),
   layoutOrder:    document.querySelector("#layoutOrder"),
   imageFit:       document.querySelector("#imageFit"),
   titleFit:       document.querySelector("#titleFit"),
-  logoToggle:     document.querySelector("#logoToggle"),
+  logoDisplay:    document.querySelector("#logoDisplay"),
   bgImageUpload:  document.querySelector("#bgImageUpload"),
   // Colour values (set by custom pickers)
   background: { value: "#000000" },
@@ -231,7 +230,7 @@ function drawContainedImage(image, x, y, width, height) {
 }
 
 async function drawLogoOnTrim(trimY, trimHeight, layoutFlipped, width, padding) {
-  if (!controls.logoToggle?.checked) return;
+  if (controls.logoDisplay?.value !== "on") return;
   const logoSize = Math.round(width * 0.13); // diameter — sits centred on trim line
   const logoY    = trimY + trimHeight / 2 - logoSize / 2;
   const logoX    = layoutFlipped
@@ -326,7 +325,7 @@ async function drawCard(data = currentData) {
       const scale = imageHeight / loadedImage.naturalHeight;
       const drawW = loadedImage.naturalWidth * scale;
       if (drawW >= width) {
-        const imgAlign = controls.imageAlign?.value || "center";
+        const imgAlign = "center";
         const drawX = imgAlign === "left" ? 0 : imgAlign === "right" ? width - drawW : (width - drawW) / 2;
         ctx.drawImage(loadedImage, drawX, imageY, drawW, imageHeight);
       } else {
@@ -556,7 +555,7 @@ telegramSource.addEventListener("input", () => {
 });
 
 // ─── Settings controls ────────────────────────────────────────────────────────
-for (const control of [controls.titleSize, controls.imageAlign, controls.textAlign, controls.titleCase, controls.layoutOrder, controls.imageFit]) {
+for (const control of [controls.titleSize, controls.textAlign, controls.titleCase, controls.layoutOrder, controls.imageFit, controls.logoDisplay]) {
   control?.addEventListener("input", () => drawCard(currentData));
 }
 
@@ -599,10 +598,9 @@ resetButton.addEventListener("click", async () => {
   controls.titleSize.value   = "58";
   controls.titleCase.value   = "upper";
   controls.textAlign.value   = "left";
-  controls.imageAlign.value  = "center";
   controls.layoutOrder.value = "image-top";
   controls.imageFit.value    = "crop";
-  if (controls.logoToggle) controls.logoToggle.checked = false;
+  if (controls.logoDisplay) controls.logoDisplay.value = "off";
   controls.bgImageUpload.value = "";
   uploadedBgImageSrc = "";
   // Reset colour pickers to defaults
