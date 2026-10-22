@@ -230,13 +230,13 @@ function drawContainedImage(image, x, y, width, height) {
   ctx.drawImage(image, x + (width - drawWidth) / 2, y + (height - drawHeight) / 2, drawWidth, drawHeight);
 }
 
-async function drawLogoOnTrim(trimY, trimHeight, layoutFlipped, width) {
+async function drawLogoOnTrim(trimY, trimHeight, layoutFlipped, width, padding) {
   if (!controls.logoToggle?.checked) return;
   const logoSize = Math.round(width * 0.13); // diameter — sits centred on trim line
   const logoY    = trimY + trimHeight / 2 - logoSize / 2;
   const logoX    = layoutFlipped
-    ? Math.round(width * 0.056)              // text-top: left side
-    : width - Math.round(width * 0.056) - logoSize; // image-top: right side
+    ? padding                          // text-top: left, matching text margin
+    : width - padding - logoSize;      // image-top: right, matching text margin
   try {
     const src  = buildLogoSvg(controls.trim.value, controls.background.value);
     const logo = await loadImage(src);
@@ -348,9 +348,6 @@ async function drawCard(data = currentData) {
   ctx.fillStyle = controls.trim.value;
   ctx.fillRect(0, trimY, width, trimHeight);
 
-  // ── Logo centred on trim line ──
-  await drawLogoOnTrim(trimY, trimHeight, layoutFlipped, width);
-
   // ── Background image / colour behind text area ──
   if (uploadedBgImageSrc) {
     try {
@@ -366,6 +363,9 @@ async function drawCard(data = currentData) {
     ctx.fillStyle = controls.background.value;
     ctx.fillRect(0, textAreaY, width, textAreaHeight);
   }
+
+  // ── Logo centred on trim line (drawn after bg so it sits on top) ──
+  await drawLogoOnTrim(trimY, trimHeight, layoutFlipped, width, padding);
 
   // ── Source name ──
   const sourceTop      = textAreaY + gap;
