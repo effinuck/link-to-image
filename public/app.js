@@ -49,7 +49,7 @@ const controls = {
   layoutOrder:    document.querySelector("#layoutOrder"),
   imageFit:       document.querySelector("#imageFit"),
   titleFit:       document.querySelector("#titleFit"),
-  logoUpload:     document.querySelector("#logoUpload"),
+  logoToggle:     document.querySelector("#logoToggle"),
   bgImageUpload:  document.querySelector("#bgImageUpload"),
   // Colour values (set by custom pickers)
   background: { value: "#000000" },
@@ -61,10 +61,17 @@ const fontStack   = "Inter, ui-sans-serif, system-ui, sans-serif";
 const titleFont   = "Saira Condensed, ui-sans-serif, system-ui, sans-serif";
 const titleWeight = "800";
 
-let uploadedLogoSrc    = "";
 let uploadedBgImageSrc = "";
 let telegramImageUrl   = "";
 let telegramLoaded     = false;
+
+// ─── Built-in HH logo SVG (recoloured at draw time) ──────────────────────────
+function buildLogoSvg(circleColour, markColour) {
+  // Encode colours for safe SVG attribute use
+  const cc = circleColour.replace(/#/g, "%23");
+  const mc = markColour.replace(/#/g, "%23");
+  return `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 413.265 413.265'><circle cx='206.633' cy='206.633' r='206.633' fill='${cc}'/><path fill='${mc}' d='M286.639 129.276v57.79c0 15.962-28.646 19.244-28.646 19.244v-.013c-7.646-.14-13.805-6.371-13.805-14.051 0-10.82 12.507-14.219 13.805-14.774 6.731-2.882 13.099-12.513 13.099-24.623v-23.573h-55.816v154.155h48.308v-55.839h23.054v55.839h48.309V129.276h-48.309z'/><path fill='${mc}' d='M131.557 283.431v-57.79c0-15.962 28.646-19.244 28.646-19.244v.013c7.646.14 13.805 6.371 13.805 14.051 0 10.82-12.507 14.219-13.805 14.774-6.731 2.882-13.099 12.513-13.099 24.623v23.573h55.816V129.276h-48.308v55.839h-23.054v-55.839H83.249v154.155h48.308z'/></svg>`;
+}
 
 // ─── Colour picker ────────────────────────────────────────────────────────────
 function buildColourPicker(triggerId, dropdownId, dotId, nameId, controlKey, defaultHex, redraw = false) {
@@ -223,13 +230,18 @@ function drawContainedImage(image, x, y, width, height) {
   ctx.drawImage(image, x + (width - drawWidth) / 2, y + (height - drawHeight) / 2, drawWidth, drawHeight);
 }
 
-async function drawLogo(data, x, y, size) {
-  if (!uploadedLogoSrc) return false;
+async function drawLogoOnTrim(trimY, trimHeight, layoutFlipped, width) {
+  if (!controls.logoToggle?.checked) return;
+  const logoSize = Math.round(width * 0.13); // diameter — sits centred on trim line
+  const logoY    = trimY + trimHeight / 2 - logoSize / 2;
+  const logoX    = layoutFlipped
+    ? Math.round(width * 0.056)              // text-top: left side
+    : width - Math.round(width * 0.056) - logoSize; // image-top: right side
   try {
-    const logo = await loadImage(uploadedLogoSrc);
-    drawContainedImage(logo, x, y, size, size);
-    return true;
-  } catch { uploadedLogoSrc = ""; return false; }
+    const src  = buildLogoSvg(controls.trim.value, controls.background.value);
+    const logo = await loadImage(src);
+    ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
+  } catch { /* skip if load fails */ }
 }
 
 // ─── Draw card ────────────────────────────────────────────────────────────────
@@ -246,9 +258,8 @@ async function drawCard(data = currentData) {
   let   rawTitle      = decodeHtmlEntities(data.title || "Untitled page");
   if (!controls.titleCase || controls.titleCase.value !== "lower") rawTitle = rawTitle.toUpperCase();
 
-  const logoSize        = Math.round(width * 0.059);
   const labelSize       = Math.round(width * 0.043);
-  const sourceRowHeight = uploadedLogoSrc ? logoSize : labelSize;
+  const sourceRowHeight = labelSize;
 
   const align  = controls.textAlign?.value || "left";
   const textX  = align === "center" ? width / 2 : padding;
@@ -337,6 +348,9 @@ async function drawCard(data = currentData) {
   ctx.fillStyle = controls.trim.value;
   ctx.fillRect(0, trimY, width, trimHeight);
 
+  // ── Logo centred on trim line ──
+  await drawLogoOnTrim(trimY, trimHeight, layoutFlipped, width);
+
   // ── Background image / colour behind text area ──
   if (uploadedBgImageSrc) {
     try {
@@ -355,13 +369,12 @@ async function drawCard(data = currentData) {
 
   // ── Source name ──
   const sourceTop      = textAreaY + gap;
-  const hasLogo        = await drawLogo(data, padding, sourceTop, logoSize);
-  const sourceX        = hasLogo ? padding + logoSize + Math.round(width * 0.022) : (align === "center" ? width / 2 : padding);
-  const sourceBaseline = hasLogo ? sourceTop + Math.round(logoSize * 0.72) : sourceTop + labelSize;
+  const sourceX        = align === "center" ? width / 2 : padding;
+  const sourceBaseline = sourceTop + labelSize;
 
   ctx.font      = `400 ${labelSize}px ${fontStack}`;
   ctx.fillStyle = controls.trim.value;
-  ctx.textAlign = hasLogo ? "left" : align;
+  ctx.textAlign = align;
   ctx.fillText(data.displayUrl || "", sourceX, sourceBaseline);
 
   // ── Title ──
@@ -547,22 +560,7 @@ for (const control of [controls.titleSize, controls.imageAlign, controls.textAli
   control?.addEventListener("input", () => drawCard(currentData));
 }
 
-controls.logoUpload.addEventListener("change", () => {
-  const file = controls.logoUpload.files?.[0];
-  if (!file) { uploadedLogoSrc = ""; drawCard(currentData); return; }
-  if (file.type !== "image/png" && file.type !== "image/svg+xml") {
-    controls.logoUpload.value = "";
-    setStatus("Please upload a PNG or SVG logo.");
-    return;
-  }
-  const reader = new FileReader();
-  reader.addEventListener("load", async () => {
-    uploadedLogoSrc = typeof reader.result === "string" ? reader.result : "";
-    await drawCard(currentData);
-    setStatus("Logo added.");
-  });
-  reader.readAsDataURL(file);
-});
+controls.logoToggle?.addEventListener("change", () => drawCard(currentData));
 
 controls.bgImageUpload.addEventListener("change", () => {
   const file = controls.bgImageUpload.files?.[0];
@@ -604,9 +602,8 @@ resetButton.addEventListener("click", async () => {
   controls.imageAlign.value  = "center";
   controls.layoutOrder.value = "image-top";
   controls.imageFit.value    = "crop";
-  controls.logoUpload.value = "";
+  if (controls.logoToggle) controls.logoToggle.checked = false;
   controls.bgImageUpload.value = "";
-  uploadedLogoSrc = "";
   uploadedBgImageSrc = "";
   // Reset colour pickers to defaults
   function resetPicker(controlKey, hex, dotId, nameId) {
